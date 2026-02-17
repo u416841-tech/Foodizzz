@@ -42,12 +42,14 @@ export default function Cart() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar cartItemsCount={0} />
-        <main className="container py-8">
+        <main className="container py-16 px-4">
           <div className="max-w-2xl mx-auto text-center">
-            <ShoppingBag className="w-24 h-24 mx-auto text-muted-foreground mb-4" />
-            <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Add some delicious items from our menu to get started!
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+              <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Your cart is empty</h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Add some delicious items from our menu to get started
             </p>
             <Link to="/menu">
               <Button size="lg">Browse Menu</Button>
@@ -61,48 +63,54 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartItemsCount={cartItems.length} />
-      <main className="container py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
+      <main className="container py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-8">Your Cart</h1>
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
-                <Card key={item.menuItem.id}>
+                <Card key={item.menuItem.id} className="border-border">
                   <CardContent className="p-6">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-start space-x-4">
                       <img
                         src={item.menuItem.image}
                         alt={item.menuItem.name}
-                        className="w-20 h-20 object-cover rounded-lg"
+                        className="w-24 h-24 object-cover rounded-lg"
                       />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{item.menuItem.name}</h3>
-                        <p className="text-muted-foreground text-sm mb-2">{item.menuItem.description}</p>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">{item.menuItem.category}</Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {item.menuItem.preparationTime}m prep time
-                          </span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg mb-1">{item.menuItem.name}</h3>
+                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{item.menuItem.description}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {item.menuItem.category && (
+                            <Badge variant="outline" className="text-xs">{item.menuItem.category}</Badge>
+                          )}
+                          {item.menuItem.preparationTime && (
+                            <span className="text-xs text-muted-foreground">
+                              {item.menuItem.preparationTime}m prep
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end space-y-2">
-                        <span className="font-bold text-lg">
-                          {(item.menuItem.price * item.quantity).toFixed(2)}
+                      <div className="flex flex-col items-end space-y-3">
+                        <span className="font-bold text-xl">
+                          ₹{(item.menuItem.price * item.quantity).toFixed(2)}
                         </span>
                         <div className="flex items-center space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
+                            className="h-8 w-8 p-0"
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
+                          <span className="w-8 text-center font-semibold">{item.quantity}</span>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
+                            className="h-8 w-8 p-0"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -110,7 +118,7 @@ export default function Cart() {
                             variant="outline"
                             size="sm"
                             onClick={() => removeFromCart(item.menuItem.id)}
-                            className="text-destructive hover:text-destructive"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -124,13 +132,13 @@ export default function Cart() {
             {/* Order Summary & Customer Info */}
             <div className="space-y-6">
               {/* Customer Information */}
-              <Card>
+              <Card className="border-border">
                 <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
+                  <CardTitle className="text-xl">Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="name" className="text-sm font-semibold mb-2 block">Full Name</Label>
                     <Input
                       id="name"
                       value={customerInfo.name}
@@ -139,7 +147,7 @@ export default function Cart() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone" className="text-sm font-semibold mb-2 block">Phone Number</Label>
                     <Input
                       id="phone"
                       value={customerInfo.phone}
@@ -150,21 +158,21 @@ export default function Cart() {
                 </CardContent>
               </Card>
               {/* Order Summary */}
-              <Card>
+              <Card className="border-border">
                 <CardHeader>
-                  <CardTitle>Order Summary</CardTitle>
+                  <CardTitle className="text-xl">Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
+                  <div className="flex justify-between text-base">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Tax (10%)</span>
-                    <span>₹{tax.toFixed(2)}</span>
+                  <div className="flex justify-between text-base">
+                    <span className="text-muted-foreground">Tax (10%)</span>
+                    <span className="font-semibold">₹{tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-4">
-                    <div className="flex justify-between font-bold text-lg">
+                    <div className="flex justify-between font-bold text-xl">
                       <span>Total</span>
                       <span className="text-primary">₹{total.toFixed(2)}</span>
                     </div>

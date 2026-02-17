@@ -7,6 +7,7 @@ const dishSchema = new mongoose.Schema({
   imageUrl: { type: String }, 
   available: { type: Boolean, default: true }, // is the dish available
   description: { type: String }, // dish description
+  preparationTime: { type: Number, default: 15 }, // preparation time in minutes
 }, { timestamps: true });
 
 module.exports = mongoose.model('Dish', dishSchema); 

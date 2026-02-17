@@ -69,50 +69,39 @@ export default function Menu() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartItemsCount={cartItems.length} />
-      <main className="container py-8">
+      <main className="container py-12 px-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Our Menu</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Menu</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Discover our delicious selection of freshly prepared dishes, made with the finest ingredients.
           </p>
         </div>
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        
+        {/* Search */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               placeholder="Search menu items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-12 text-base border-border"
             />
           </div>
-          {/* Category Filter UI - remove this section */}
-          {/* <div className="mb-6 flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Button
-                key={cat}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                onClick={() => setSelectedCategory(cat)}
-                className="capitalize"
-              >
-                {cat}
-              </Button>
-            ))}
-          </div> */}
         </div>
+        
         {/* Loading and Error States */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-muted-foreground">Loading menu...</p>
+          <div className="text-center py-20">
+            <p className="text-lg text-muted-foreground">Loading menu...</p>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-red-500">{error}</p>
+          <div className="text-center py-20">
+            <p className="text-lg text-destructive">{error}</p>
           </div>
         ) : filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredItems.map((item) => (
               <MenuCard
                 key={item.id || item._id}
@@ -128,17 +117,15 @@ export default function Menu() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-xl text-muted-foreground">No items found matching your criteria.</p>
+          <div className="text-center py-20">
+            <p className="text-lg text-muted-foreground mb-6">No items found matching your criteria.</p>
             <Button
               variant="outline"
-              className="mt-4"
               onClick={() => {
                 setSearchTerm("");
-                // setSelectedCategory("all"); // This line is removed
               }}
             >
-              Clear Filters
+              Clear Search
             </Button>
           </div>
         )}

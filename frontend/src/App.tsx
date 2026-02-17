@@ -9,6 +9,8 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Confirmation from "./pages/Confirmation";
 import TrackOrder from "./pages/TrackOrder";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/confirmation" element={<Confirmation />} />
             <Route path="/track" element={<TrackOrder />} />
             <Route path="/track/:orderId" element={<TrackOrder />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
