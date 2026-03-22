@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/ui/navbar";
 import { MenuCard } from "@/components/MenuCard";
 import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/types";
-import { Search, MapPin, Navigation, ChevronDown, X } from "lucide-react";
+import { Search, MapPin, Navigation, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/CartContext";
 
@@ -11,7 +11,6 @@ import { useCart } from "@/context/CartContext";
 function LocationHero({ onConfirm }: { onConfirm: (address: string) => void }) {
   const [address, setAddress] = useState("");
   const [locating, setLocating] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleGPS = () => {
     if (!navigator.geolocation) return;
@@ -40,123 +39,131 @@ function LocationHero({ onConfirm }: { onConfirm: (address: string) => void }) {
     if (address.trim()) onConfirm(address.trim());
   };
 
+  // Food images for the collage
+  const foodImages = [
+    { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=600&q=80&fit=crop", label: "Butter Chicken" },
+    { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=600&q=80&fit=crop", label: "Biryani" },
+    { src: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&q=80&fit=crop", label: "Paneer Tikka" },
+    { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=600&q=80&fit=crop", label: "Masala Dosa" },
+    { src: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&q=80&fit=crop", label: "Dal Makhani" },
+    { src: "https://images.unsplash.com/photo-1574653853027-5382a3d23a15?w=600&q=80&fit=crop", label: "Tandoori" },
+  ];
+
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Video background */}
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-        poster="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=1800&q=80&fit=crop"
-      >
-        <source
-          src="https://videos.pexels.com/video-files/3195394/3195394-uhd_2560_1440_25fps.mp4"
-          type="video/mp4"
-        />
-        {/* Fallback image if video fails */}
-        <img
-          src="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=1800&q=80&fit=crop"
-          alt="Chef cooking"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      </video>
+    <section className="relative min-h-screen flex items-center overflow-hidden">
+      {/* Background image collage — 3-col mosaic */}
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-0.5">
+        {foodImages.map((img, i) => (
+          <div key={i} className="relative overflow-hidden">
+            <img
+              src={img.src}
+              alt={img.label}
+              className="w-full h-full object-cover scale-110"
+              style={{ filter: "brightness(0.45) saturate(1.2)" }}
+            />
+          </div>
+        ))}
+      </div>
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+      {/* Unified dark overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
+      {/* Sienna ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-sienna/20 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-sienna/15 rounded-full blur-[120px] pointer-events-none" />
+      {/* Two-column layout */}
+      <div className="relative z-10 container py-24 grid lg:grid-cols-2 gap-12 items-center">
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-4 text-center">
-        {/* Label */}
-        <div className="inline-flex items-center gap-2 mb-6 animate-fade-up">
-          <span className="w-8 h-px bg-sienna" />
-          <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Foodizzz</span>
-          <span className="w-8 h-px bg-sienna" />
-        </div>
+        {/* Left — text + location module */}
+        <div className="w-full max-w-xl">
+          <div className="inline-flex items-center gap-2 mb-6 animate-fade-up">
+            <span className="w-8 h-px bg-sienna" />
+            <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Foodizzz</span>
+            <span className="w-8 h-px bg-sienna" />
+          </div>
 
-        {/* Heading */}
-        <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-cream leading-tight mb-4 animate-fade-up-delay-1">
-          Explore Our Full Menu:<br />
-          <span className="italic text-gradient">Taste the Best</span> of Foodizzz
-        </h1>
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-cream leading-tight mb-4 animate-fade-up-delay-1">
+            Explore Our Full Menu:<br />
+            <span className="italic text-gradient">Taste the Best</span><br />
+            of Foodizzz
+          </h1>
 
-        <p className="text-cream/70 text-lg mb-10 animate-fade-up-delay-2">
-          Authentic Indian flavours, crafted fresh — delivered to your door.
-        </p>
-
-        {/* Glassmorphism location module */}
-        <div className="glass-strong rounded-3xl p-6 md:p-8 animate-fade-up-delay-3 shadow-2xl shadow-black/40">
-          <p className="text-cream/80 text-sm font-medium mb-4 flex items-center justify-center gap-2">
-            <MapPin className="w-4 h-4 text-sienna" />
-            Set your delivery location to start ordering
+          <p className="text-cream/70 text-base mb-8 animate-fade-up-delay-2">
+            Authentic Indian flavours, crafted fresh — delivered to your door.
           </p>
 
-          {/* Address input */}
-          <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40" />
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-              placeholder="Enter your delivery address..."
-              className="w-full h-13 pl-11 pr-10 py-3.5 rounded-2xl bg-white/8 border border-white/15 text-cream placeholder:text-cream/35 focus:outline-none focus:border-sienna/60 focus:bg-white/12 transition-all duration-300 text-sm"
-            />
-            {address && (
-              <button
-                onClick={() => setAddress("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-cream/40 hover:text-cream transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+          {/* Glassmorphism location module */}
+          <div className="glass-strong rounded-3xl p-6 animate-fade-up-delay-3 shadow-2xl shadow-black/40">
+            <p className="text-cream/80 text-sm font-medium mb-4 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-sienna" />
+              Set your delivery location to start ordering
+            </p>
+
+            <div className="relative mb-4">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40" />
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
+                placeholder="Enter your delivery address..."
+                className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/8 border border-white/15 text-cream placeholder:text-cream/35 focus:outline-none focus:border-sienna/60 focus:bg-white/12 transition-all duration-300 text-sm"
+              />
+              {address && (
+                <button onClick={() => setAddress("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream/40 hover:text-cream transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-cream/40 text-xs font-semibold tracking-widest uppercase">or</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            <button
+              onClick={handleGPS}
+              disabled={locating}
+              className="w-full flex items-center justify-center gap-3 h-11 rounded-2xl border border-sienna/40 text-sienna hover:bg-sienna/10 hover:border-sienna/70 transition-all duration-300 text-sm font-medium mb-4 disabled:opacity-60"
+            >
+              {locating ? (
+                <><div className="w-4 h-4 border-2 border-sienna border-t-transparent rounded-full animate-spin" />Detecting location...</>
+              ) : (
+                <><Navigation className="w-4 h-4" />Use Current Location</>
+              )}
+            </button>
+
+            <button
+              onClick={handleConfirm}
+              disabled={!address.trim()}
+              className="w-full h-12 rounded-2xl bg-sienna hover:bg-sienna-light disabled:opacity-40 disabled:cursor-not-allowed text-cream font-semibold text-base transition-all duration-300 shadow-lg shadow-sienna/30 hover:shadow-sienna/50 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Browse Menu →
+            </button>
           </div>
-
-          {/* OR divider */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-cream/40 text-xs font-semibold tracking-widest uppercase">or</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          {/* GPS button */}
-          <button
-            onClick={handleGPS}
-            disabled={locating}
-            className="w-full flex items-center justify-center gap-3 h-12 rounded-2xl border border-sienna/40 text-sienna hover:bg-sienna/10 hover:border-sienna/70 transition-all duration-300 text-sm font-medium mb-5 disabled:opacity-60"
-          >
-            {locating ? (
-              <>
-                <div className="w-4 h-4 border-2 border-sienna border-t-transparent rounded-full animate-spin" />
-                Detecting location...
-              </>
-            ) : (
-              <>
-                <Navigation className="w-4 h-4" />
-                Use Current Location
-              </>
-            )}
-          </button>
-
-          {/* Confirm CTA */}
-          <button
-            onClick={handleConfirm}
-            disabled={!address.trim()}
-            className="w-full h-13 py-3.5 rounded-2xl bg-sienna hover:bg-sienna-light disabled:opacity-40 disabled:cursor-not-allowed text-cream font-semibold text-base transition-all duration-300 shadow-lg shadow-sienna/30 hover:shadow-sienna/50 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Browse Menu →
-          </button>
         </div>
 
-        {/* Scroll hint */}
-        <div className="mt-10 flex flex-col items-center gap-2 text-cream/30 animate-fade-up-delay-5">
-          <span className="text-xs tracking-widest uppercase">Scroll to explore</span>
-          <ChevronDown className="w-4 h-4 animate-bounce" />
+        {/* Right — featured dish cards */}
+        <div className="hidden lg:grid grid-cols-2 gap-3 animate-fade-up-delay-2">
+          {foodImages.slice(0, 4).map((img, i) => (
+            <div
+              key={i}
+              className="relative rounded-2xl overflow-hidden group cursor-pointer"
+              style={{ height: i % 2 === 0 ? "200px" : "160px", marginTop: i % 2 !== 0 ? "40px" : "0" }}
+            >
+              <img
+                src={img.src}
+                alt={img.label}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <span className="text-cream font-semibold text-sm drop-shadow">{img.label}</span>
+              </div>
+              {/* Sienna accent border on hover */}
+              <div className="absolute inset-0 rounded-2xl border-2 border-sienna/0 group-hover:border-sienna/50 transition-all duration-300" />
+            </div>
+          ))}
         </div>
       </div>
 

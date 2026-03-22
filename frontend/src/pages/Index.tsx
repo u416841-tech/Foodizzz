@@ -277,39 +277,37 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Right — 3D floating plate + side food strip */}
-          <div className="hidden lg:flex items-center gap-4 justify-center animate-fade-in">
+          {/* Right — 3D floating plate + Browse Menu CTA */}
+          <div className="hidden lg:flex flex-col items-center gap-6 justify-center animate-fade-in">
             <HeroPlate mouseX={mousePos.x} mouseY={mousePos.y} />
-            {/* Side food strip */}
-            <div className="flex flex-col gap-3 shrink-0">
-              {[
-                { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200&q=80&fit=crop", label: "Butter Chicken" },
-                { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=200&q=80&fit=crop", label: "Biryani" },
-                { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=200&q=80&fit=crop", label: "Masala Dosa" },
-              ].map((item, i) => (
-                <div key={i} className="relative w-28 h-24 rounded-2xl overflow-hidden group cursor-pointer" style={{ animationDelay: `${i * 0.15}s` }}>
-                  <img src={item.src} alt={item.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <span className="absolute bottom-1.5 left-2 right-2 text-cream text-[10px] font-medium leading-tight">{item.label}</span>
+            {/* Browse Menu card below the plate */}
+            <Link to="/menu" className="w-full max-w-[360px]">
+              <div className="glass rounded-2xl px-6 py-4 flex items-center justify-between border border-sienna/20 hover:border-sienna/50 hover:bg-sienna/5 transition-all duration-300 group cursor-pointer">
+                <div>
+                  <p className="text-xs text-sienna font-medium tracking-widest uppercase mb-0.5">Ready to order?</p>
+                  <p className="text-cream font-semibold text-base">Browse Full Menu</p>
                 </div>
-              ))}
-            </div>
+                <div className="w-10 h-10 rounded-full bg-sienna flex items-center justify-center shadow-lg shadow-sienna/30 group-hover:scale-110 transition-transform">
+                  <ArrowRight className="w-5 h-5 text-cream" />
+                </div>
+              </div>
+            </Link>
           </div>
 
-          {/* Mobile food visual — shown below lg */}
-          <div className="lg:hidden grid grid-cols-2 gap-3 animate-fade-up-delay-3">
-            {[
-              { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400&q=80&fit=crop", label: "Butter Chicken" },
-              { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&q=80&fit=crop", label: "Biryani" },
-              { src: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=400&q=80&fit=crop", label: "Paneer Tikka" },
-              { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=400&q=80&fit=crop", label: "Masala Dosa" },
-            ].map((item, i) => (
-              <div key={i} className="relative rounded-2xl overflow-hidden aspect-square group">
-                <img src={item.src} alt={item.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                <span className="absolute bottom-2 left-3 text-cream text-xs font-medium">{item.label}</span>
+          {/* Mobile Browse Menu CTA — shown below lg */}
+          <div className="lg:hidden animate-fade-up-delay-3">
+            <div className="glass rounded-3xl p-8 text-center border border-sienna/20">
+              <div className="w-16 h-16 rounded-2xl bg-sienna/15 flex items-center justify-center mx-auto mb-4">
+                <ChefHat className="w-8 h-8 text-sienna" />
               </div>
-            ))}
+              <h3 className="font-serif text-2xl font-bold text-cream mb-2">120+ Dishes</h3>
+              <p className="text-muted-foreground text-sm mb-6">From rich curries to crispy street food — something for every craving.</p>
+              <Link to="/menu">
+                <Button size="lg" className="w-full h-12 bg-sienna hover:bg-sienna-light text-cream rounded-full font-medium shadow-lg shadow-sienna/25">
+                  Browse Menu <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
