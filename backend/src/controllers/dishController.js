@@ -5,14 +5,16 @@ const path = require('path');
 // Create a new dish
 exports.createDish = async (req, res) => {
   try {
-    const { name, price, available, description } = req.body;
+    const { name, price, available, description, category, preparationTime } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
     const dish = new Dish({
       name,
       price: Number(price),
       imageUrl,
       available: available !== undefined ? available === 'true' : true,
-      description
+      description,
+      category,
+      preparationTime: preparationTime !== undefined ? Number(preparationTime) : undefined,
     });
     const savedDish = await dish.save();
     res.status(201).json(savedDish);
@@ -45,10 +47,15 @@ exports.getDishById = async (req, res) => {
 // Update a dish
 exports.updateDish = async (req, res) => {
   try {
-    const { name, price, available, description } = req.body;
-    let update = { name, price: Number(price) };
+    const { name, price, available, description, category, preparationTime } = req.body;
+    let update = {};
+
+    if (name !== undefined) update.name = name;
+    if (price !== undefined) update.price = Number(price);
     if (available !== undefined) update.available = available === 'true';
     if (description !== undefined) update.description = description;
+    if (category !== undefined) update.category = category;
+    if (preparationTime !== undefined) update.preparationTime = Number(preparationTime);
     if (req.file) {
       update.imageUrl = `/uploads/${req.file.filename}`;
     }

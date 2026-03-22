@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/ui/navbar";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChefHat, Utensils, Leaf, ArrowRight } from "lucide-react";
@@ -9,17 +10,17 @@ export default function About() {
     {
       icon: <ChefHat className="w-8 h-8" />,
       title: "Best Chef",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque diam pellentesque bibendum non dui volutpat"
+      description: "Our experienced chefs bring passion and skill to every recipe, carefully crafting dishes with authentic flavors and perfect taste you can enjoy every time you order."
     },
     {
       icon: <Utensils className="w-8 h-8" />,
       title: "120 Item food",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque diam pellentesque bibendum non dui volutpat"
+      description: "Explore a wide variety of meals on our menu from quick bites to hearty favorites giving you plenty of delicious options to satisfy every craving."
     },
     {
       icon: <Leaf className="w-8 h-8" />,
       title: "Clean Environment",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque diam pellentesque bibendum non dui volutpat"
+      description: "We follow strict hygiene and food safety standards in our kitchen, ensuring every meal is prepared in a clean, safe, and healthy environment you can trust."
     }
   ];
 
@@ -28,7 +29,7 @@ export default function About() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative bg-foreground text-background py-20">
+      <section className="relative bg-foreground text-background py-20 animate-fade-up pt-32">
         <div className="absolute inset-0 opacity-20">
           <img 
             src="/abou1.png" 
@@ -36,11 +37,14 @@ export default function About() {
             className="w-full h-full object-cover"
           />
         </div>
-       
+        <div className="container relative z-10 text-center">
+          <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Our Story</span>
+          <h1 className="font-serif text-5xl md:text-6xl font-bold text-cream mt-3">About Foodizzz</h1>
+        </div>
       </section>
 
       {/* Main Content Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-background animate-fade-up">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             {/* Left - Single Image */}
@@ -65,7 +69,7 @@ export default function About() {
               </div>
 
               <p className="text-muted-foreground leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque diam pellentesque bibendum non dui volutpat fringilla bibendum. Urna, elit augue urna, vitae feugiat pretium donec id elementum. Ultrices mattis sed vitae mus risus. Lacus nisi, et ac dapibus sit eu velit in consequat.
+                Foodizzz is built on a love for good food and great service. We prepare every dish with fresh ingredients, balanced flavors, and attention to detail to ensure consistent quality. From the kitchen to your doorstep, our goal is simple deliver tasty, satisfying meals you can trust and enjoy every day.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -87,12 +91,12 @@ export default function About() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-20 bg-muted/50">
+      <section className="py-20 bg-muted/50 animate-fade-up">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose us</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque diam pellentesque bibendum non dui volutpat fringilla bibendum.
+               At Foodizzz, we serve more than just meals we serve comfort and freshness in every bite. Our dishes are prepared using carefully selected ingredients and cooked only after you order, ensuring rich flavor and perfect quality. Every order is packed with care and delivered hot to your doorstep, so you can enjoy delicious food anytime, anywhere.
             </p>
           </div>
 
@@ -126,8 +130,9 @@ export default function About() {
 
       {/* Footer */}
       <footer className="w-full bg-background border-t border-border py-8 text-center text-muted-foreground text-sm">
-        <div className="container mx-auto px-4">
-          <p>© {new Date().getFullYear()} OrderEase. All rights reserved.</p>
+        <div className="container mx-auto px-4 flex flex-col items-center gap-3">
+          <BrandLogo size="sm" />
+          <p>© {new Date().getFullYear()} Foodizzz. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Navbar } from "@/components/ui/navbar";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { OrderCard } from "@/components/OrderCard";
-import { Search, Clock } from "lucide-react";
+import { Search, Clock, MapPin, CheckCircle2 } from "lucide-react";
 // import { mockOrders } from "@/data/mockData";
 
 // Countdown timer component
@@ -51,6 +51,7 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -65,6 +66,7 @@ export default function TrackOrder() {
       const foundOrder = orders.find((order: any) => order.displayOrderId === id || order._id === id);
       if (foundOrder) {
         setCurrentOrder(foundOrder);
+        setLastUpdated(new Date());
       } else {
         setError("Order not found");
       }
@@ -105,13 +107,38 @@ export default function TrackOrder() {
     }));
   };
 
+  const progressMeta = useMemo(() => {
+    if (!currentOrder) return { progress: [], percent: 0 };
+    const progress = getOrderProgress(currentOrder.status);
+    const activeIndex = progress.findIndex((p) => p.active);
+    if (activeIndex === -1 || progress.length <= 1) {
+      return { progress, percent: 0 };
+    }
+    const percent = (activeIndex / (progress.length - 1)) * 100;
+    return { progress, percent };
+  }, [currentOrder]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container py-8">
+      <main className="container py-8 animate-fade-up pt-24">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Track Your Order</h1>
+          <div className="flex items-center justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Track Your Order</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Live updates from the kitchen to the pickup counter.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+              </span>
+              Live tracking
+            </div>
+          </div>
           
           {/* Search Section */}
           <Card className="mb-8">
@@ -145,47 +172,80 @@ export default function TrackOrder() {
               {/* Order Progress */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Order Progress</CardTitle>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <CardTitle>Order Progress</CardTitle>
+                      <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700 bg-emerald-50">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        Live
+                      </Badge>
+                    </div>
+                    {lastUpdated && (
+                      <p className="text-xs text-muted-foreground">
+                        Last updated {lastUpdated.toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between mb-6">
-                    {getOrderProgress(currentOrder.status).map((item, index) => (
-                      <div key={item.stage} className="flex flex-col items-center flex-1">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                          item.completed 
-                            ? item.active 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-success text-success-foreground'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {item.completed ? (
-                            item.active ? (
-                              <Clock className="w-6 h-6" />
+                  <div className="relative mb-8">
+                    <div className="flex items-center justify-between">
+                      {progressMeta.progress.map((item, index) => (
+                        <div key={item.stage} className="relative flex flex-col items-center flex-1">
+                          <div
+                            className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 border-2 ${
+                              item.completed
+                                ? item.active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-emerald-500 text-white border-emerald-500"
+                                : "bg-muted text-muted-foreground border-muted"
+                            }`}
+                          >
+                            {item.completed ? (
+                              item.active ? (
+                                <Clock className="w-6 h-6" />
+                              ) : (
+                                <CheckCircle2 className="w-6 h-6" />
+                              )
                             ) : (
-                              "✓"
-                            )
-                          ) : (
-                            index + 1
+                              index + 1
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <p
+                              className={`font-medium text-sm ${
+                                item.completed ? "text-foreground" : "text-muted-foreground"
+                              }`}
+                            >
+                              {item.stage === "queued" && "Queued"}
+                              {item.stage === "preparing" && "Preparing"}
+                              {item.stage === "ready" && "Ready"}
+                            </p>
+                          </div>
+                          {index < progressMeta.progress.length - 1 && (
+                            <div
+                              className={`absolute top-6 left-1/2 right-[-50%] h-0.5 ${
+                                progressMeta.progress[index + 1]?.completed
+                                  ? "bg-emerald-500"
+                                  : "bg-muted"
+                              }`}
+                            />
                           )}
                         </div>
-                        <div className="text-center">
-                          <p className={`font-medium text-sm ${
-                            item.completed ? 'text-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {item.stage === 'queued' && 'Queued'}
-                            {item.stage === 'preparing' && 'Preparing'}
-                            {item.stage === 'ready' && 'Ready'}
-                          </p>
-                        </div>
-                        {index < getOrderProgress(currentOrder.status).length - 1 && (
-                          <div className={`absolute h-0.5 w-20 mt-6 ${
-                            getOrderProgress(currentOrder.status)[index + 1]?.completed 
-                              ? 'bg-success' 
-                              : 'bg-muted'
-                          }`} style={{ marginLeft: '60px' }} />
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-primary via-emerald-500 to-primary transition-all duration-500"
+                        style={{ width: `${progressMeta.percent}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Status refreshes automatically every 10 seconds while this page is open.
+                    </p>
                   </div>
                   
                   <div className="text-center">

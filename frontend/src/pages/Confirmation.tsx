@@ -13,7 +13,7 @@ export default function Confirmation() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="container py-8">
+        <main className="container py-8 animate-fade-up pt-24">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-3xl font-bold mb-4">Order not found</h1>
             <Link to="/menu">
@@ -29,7 +29,7 @@ export default function Confirmation() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container py-8">
+      <main className="container py-8 animate-fade-up pt-24">
         <div className="max-w-3xl mx-auto">
           {/* Success Header */}
           <div className="text-center mb-8">

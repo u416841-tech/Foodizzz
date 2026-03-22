@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Clock, Phone, User, Save } from "lucide-react";
+import { Clock, Phone, User, MapPin, Save } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -51,7 +51,7 @@ export function OrderCard({ order, onStatusUpdate, showActions = false, onTimeRe
           <CardTitle className="text-lg">Order #{order.id}</CardTitle>
           <StatusBadge status={order.status} className="text-xs" />
         </div>
-        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <div className="flex items-center space-x-1">
             <User className="w-4 h-4" />
             <span>{order.customerName}</span>
@@ -60,6 +60,12 @@ export function OrderCard({ order, onStatusUpdate, showActions = false, onTimeRe
             <Phone className="w-4 h-4" />
             <span>{order.customerPhone}</span>
           </div>
+          {order.customerAddress && (
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4 text-sienna shrink-0" />
+              <span className="text-sienna">{order.customerAddress}</span>
+            </div>
+          )}
           <div className="flex items-center space-x-1">
             <Clock className="w-4 h-4" />
             <span>{order.estimatedTime > 0 ? `${order.estimatedTime}m` : 'Ready'}</span>

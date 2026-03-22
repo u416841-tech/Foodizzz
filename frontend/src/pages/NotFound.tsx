@@ -5,7 +5,7 @@ import { Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 animate-fade-up">
       <Card className="w-full max-w-md text-center">
         <CardContent className="py-12">
           <div className="text-6xl font-bold text-primary mb-4">404</div>

@@ -1,68 +1,171 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/ui/navbar";
-import { ChefHat, Clock, Truck, Award, ArrowRight, MapPin, CreditCard, Package, CheckCircle2 } from "lucide-react";
+import { BrandLogo } from "@/components/ui/brand-logo";
+import { ArrowRight, ChefHat, Clock, Star, Truck, Award, Users, Flame, Leaf } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MenuItem } from "@/types";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-const Index = () => {
+gsap.registerPlugin(ScrollTrigger);
+
+/* ─── Floating 3D Hero Plate ─────────────────────────────── */
+function HeroPlate({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
+  const tiltX = (mouseY - 0.5) * -18;
+  const tiltY = (mouseX - 0.5) * 18;
+  return (
+    <div
+      className="relative w-full max-w-[520px] mx-auto"
+      style={{
+        transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+        transition: "transform 0.12s ease-out",
+      }}
+    >
+      {/* Glow ring */}
+      <div className="absolute inset-0 rounded-full bg-sienna/20 blur-3xl scale-75 animate-pulse-glow" />
+      {/* Plate shadow */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-black/60 blur-2xl rounded-full" />
+      {/* Main food image */}
+      <img
+        src="/hero1.png"
+        alt="Signature dish"
+        className="relative z-10 w-full h-auto drop-shadow-2xl animate-float"
+        style={{ filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.6))" }}
+      />
+      {/* Floating badge — prep time */}
+      <div className="glass absolute top-8 -left-4 z-20 px-4 py-2 rounded-2xl flex items-center gap-2 animate-fade-up-delay-3">
+        <Clock className="w-4 h-4 text-sienna" />
+        <span className="text-sm font-medium text-cream">Ready in 20 min</span>
+      </div>
+      {/* Floating badge — rating */}
+      <div className="glass absolute bottom-16 -right-4 z-20 px-4 py-2 rounded-2xl flex items-center gap-2 animate-fade-up-delay-4">
+        <Star className="w-4 h-4 text-gold fill-gold" />
+        <span className="text-sm font-medium text-cream">4.9 · 2.4k reviews</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Scroll-reveal hook ─────────────────────────────────── */
+function useScrollReveal() {
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
+        gsap.to(el, {
+          opacity: 1, y: 0, duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+        });
+      });
+      gsap.utils.toArray<HTMLElement>(".reveal-left").forEach((el) => {
+        gsap.to(el, {
+          opacity: 1, x: 0, duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+        });
+      });
+      gsap.utils.toArray<HTMLElement>(".reveal-right").forEach((el) => {
+        gsap.to(el, {
+          opacity: 1, x: 0, duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+        });
+      });
+      gsap.utils.toArray<HTMLElement>(".reveal-scale").forEach((el) => {
+        gsap.to(el, {
+          opacity: 1, scale: 1, duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" },
+        });
+      });
+      // Stagger children inside .stagger-parent
+      gsap.utils.toArray<HTMLElement>(".stagger-parent").forEach((parent) => {
+        gsap.to(parent.children, {
+          opacity: 1, y: 0, duration: 0.7,
+          ease: "power3.out",
+          stagger: 0.12,
+          scrollTrigger: { trigger: parent, start: "top 85%", toggleActions: "play none none none" },
+        });
+      });
+    });
+    return () => ctx.revert();
+  }, []);
+}
+
+/* ─── Parallax hero bg ───────────────────────────────────── */
+function useParallax(ref: React.RefObject<HTMLElement>, speed = 0.4) {
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const ctx = gsap.context(() => {
+      gsap.to(el, {
+        yPercent: speed * 40,
+        ease: "none",
+        scrollTrigger: { trigger: el.parentElement, start: "top top", end: "bottom top", scrub: true },
+      });
+    });
+    return () => ctx.revert();
+  }, [ref, speed]);
+}
+
+/* ─── Dish card ──────────────────────────────────────────── */
+function DishCard({ dish, index }: { dish: MenuItem; index: number }) {
+  const [err, setErr] = useState(false);
+  return (
+    <Link to="/menu" className="group block card-premium reveal" style={{ transitionDelay: `${index * 0.05}s` }}>
+      <div className="relative overflow-hidden rounded-2xl bg-charcoal-mid border border-white/5">
+        <div className="relative h-52 overflow-hidden">
+          {!err ? (
+            <img
+              src={dish.image}
+              alt={dish.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              onError={() => setErr(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sienna/10 to-gold/10">
+              <span className="text-5xl">🍽️</span>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+            <span className="text-cream font-semibold text-lg leading-tight drop-shadow">{dish.name}</span>
+            <span className="glass px-3 py-1 rounded-full text-sienna font-bold text-sm">₹{dish.price}</span>
+          </div>
+        </div>
+        <div className="p-4 flex items-center justify-between">
+          <p className="text-muted-foreground text-xs line-clamp-1 flex-1 mr-3">{dish.description}</p>
+          {dish.preparationTime && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+              <Clock className="w-3 h-3" />{dish.preparationTime}m
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────── */
+export default function Index() {
   const { toast } = useToast();
   const [popularDishes, setPopularDishes] = useState<MenuItem[]>([]);
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const heroBgRef = useRef<HTMLDivElement>(null);
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  const features = [
-    {
-      icon: <ChefHat className="w-6 h-6" />,
-      title: "Fresh Ingredients",
-      description: "Locally-sourced, premium quality ingredients in every dish"
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "Quick Service",
-      description: "Fast preparation without compromising quality"
-    },
-    {
-      icon: <Award className="w-6 h-6" />,
-      title: "Premium Quality",
-      description: "Consistently high standards in every order"
-    },
-    {
-      icon: <Truck className="w-6 h-6" />,
-      title: "Easy Pickup",
-      description: "Simple ordering with real-time tracking"
-    }
-  ];
+  useScrollReveal();
+  useParallax(heroBgRef as React.RefObject<HTMLElement>);
 
-  const orderSteps = [
-    { 
-      icon: <MapPin className="w-5 h-5" />, 
-      title: "Set your location first",
-      description: "Choose your delivery area"
-    },
-    { 
-      icon: <Package className="w-5 h-5" />, 
-      title: "Choose the food you want to order",
-      description: "Browse our delicious menu"
-    },
-    { 
-      icon: <CreditCard className="w-5 h-5" />, 
-      title: "Confirm order with payment method",
-      description: "Secure and easy checkout"
-    },
-    { 
-      icon: <CheckCircle2 className="w-5 h-5" />, 
-      title: "Wait an moment and get your food",
-      description: "Track your order in real-time"
-    }
-  ];
-
-  const testimonials = [
-    { name: "Sarah Johnson", text: "Best food ordering experience. Always fresh and on time.", rating: 5 },
-    { name: "Michael Chen", text: "The quality is consistently excellent. Highly recommend!", rating: 5 },
-    { name: "Emma Davis", text: "Simple interface, great food. What more could you ask for?", rating: 5 }
-  ];
+  useEffect(() => {
+    const handleMouse = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+    };
+    window.addEventListener("mousemove", handleMouse);
+    return () => window.removeEventListener("mousemove", handleMouse);
+  }, []);
 
   useEffect(() => {
     toast({
@@ -72,318 +175,188 @@ const Index = () => {
           <div><b>Username:</b> admin</div>
           <div><b>Password:</b> admin123</div>
           <div className="mt-2">
-            <a href="/admin/login" className="text-primary underline hover:text-secondary transition-colors">Go to Admin Panel</a>
+            <a href="/admin/login" className="text-sienna underline">Go to Admin Panel</a>
           </div>
         </div>
       ),
-      duration: 10000
+      duration: 8000,
     });
-
-    // Fetch popular dishes
     fetch(`${BACKEND_URL}/api/dishes`)
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
-        const mapped = data.slice(0, 6).map((dish: any) => ({
-          id: dish._id || dish.id,
-          name: dish.name,
-          description: dish.description || '',
-          price: dish.price,
-          image: dish.imageUrl
-            ? dish.imageUrl.startsWith('http')
-              ? dish.imageUrl
-              : `${BACKEND_URL}${dish.imageUrl}`
-            : '',
-          available: dish.available,
-          preparationTime: dish.preparationTime || 15,
-        }));
-        setPopularDishes(mapped);
+        setPopularDishes(
+          data.slice(0, 6).map((d: any) => ({
+            id: d._id || d.id,
+            name: d.name,
+            description: d.description || "",
+            price: d.price,
+            image: d.imageUrl
+              ? d.imageUrl.startsWith("http") ? d.imageUrl : `${BACKEND_URL}${d.imageUrl}`
+              : "",
+            available: d.available,
+            preparationTime: d.preparationTime || 15,
+          }))
+        );
       })
       .catch(() => {});
-  }, [toast, BACKEND_URL]);
+  }, [BACKEND_URL]);
+
+  const stats = [
+    { value: "120+", label: "Dishes", icon: <ChefHat className="w-5 h-5" /> },
+    { value: "4.9★", label: "Rating", icon: <Star className="w-5 h-5" /> },
+    { value: "20min", label: "Avg. Ready", icon: <Clock className="w-5 h-5" /> },
+    { value: "5k+", label: "Happy Guests", icon: <Users className="w-5 h-5" /> },
+  ];
+
+  const whyUs = [
+    { icon: <Flame className="w-6 h-6" />, title: "Cooked Fresh", desc: "Every dish prepared to order with farm-fresh ingredients." },
+    { icon: <Leaf className="w-6 h-6" />, title: "Clean & Hygienic", desc: "Strict kitchen standards you can trust every single time." },
+    { icon: <Truck className="w-6 h-6" />, title: "Fast Pickup", desc: "Real-time order tracking from kitchen to counter." },
+    { icon: <Award className="w-6 h-6" />, title: "Award Winning", desc: "Recognised for authentic flavours and consistent quality." },
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background grain">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative bg-background overflow-hidden min-h-[90vh] flex items-center">
-        {/* Decorative Background Circles */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-secondary/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-primary/3 rounded-full blur-2xl"></div>
-        
-        {/* Decorative Leaves - Top Left */}
-        <div className="absolute top-8 left-8 z-10 hidden lg:block">
-          <img src="/top-leaf.png" alt="" className="w-24 h-auto" />
+
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center overflow-hidden">
+        {/* Parallax background */}
+        <div ref={heroBgRef} className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1800&q=80&fit=crop"
+            alt=""
+            className="w-full h-[120%] object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
         </div>
 
-        {/* Additional Small Leaves - Scattered */}
-        <div className="absolute top-32 left-32 z-10 hidden lg:block opacity-60">
-          <img src="/leaf.png" alt="" className="w-12 h-auto rotate-45" />
-        </div>
-        <div className="absolute top-48 left-20 z-10 hidden lg:block opacity-40">
-          <img src="/leaf.png" alt="" className="w-10 h-auto -rotate-12" />
-        </div>
+        {/* Ambient orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-sienna/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gold/8 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Decorative Dots Pattern */}
-        <div className="absolute top-40 right-1/4 hidden lg:block opacity-20">
-          <div className="grid grid-cols-3 gap-3">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-2 h-2 bg-primary rounded-full"></div>
+        <div className="container relative z-10 py-24 grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left */}
+          <div className="space-y-8">
+            <div className="animate-fade-up">
+              <span className="inline-flex items-center gap-2 text-sienna text-sm font-medium tracking-[0.2em] uppercase mb-4">
+                <span className="w-8 h-px bg-sienna" />
+                Chef's Signature
+              </span>              <h1 className="font-serif text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] text-cream">
+                Taste the<br />
+                <span className="text-gradient italic">Art</span> of<br />
+                Indian Food
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-md animate-fade-up-delay-2">
+              Every dish is a story — crafted with heirloom spices, slow-cooked gravies, and a passion for authentic flavour that lingers long after the last bite.
+            </p>
+            <div className="flex flex-wrap gap-4 animate-fade-up-delay-3">
+              <Link to="/menu">
+                <Button size="lg" className="h-14 px-10 bg-sienna hover:bg-sienna-light text-cream rounded-full text-base font-medium btn-magnetic shadow-lg shadow-sienna/25 transition-all duration-300">
+                  Explore Menu
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+              <Link to="/about">
+                <Button size="lg" variant="ghost" className="h-14 px-10 rounded-full text-base border border-white/10 hover:border-sienna/40 hover:bg-sienna/5 text-cream transition-all duration-300">
+                  Our Story
+                </Button>
+              </Link>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-4 gap-4 pt-4 animate-fade-up-delay-4">
+              {stats.map((s) => (
+                <div key={s.label} className="text-center">
+                  <div className="text-sienna mb-1 flex justify-center">{s.icon}</div>
+                  <div className="font-serif text-xl font-bold text-cream">{s.value}</div>
+                  <div className="text-xs text-muted-foreground">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — 3D floating plate + side food strip */}
+          <div className="hidden lg:flex items-center gap-4 justify-center animate-fade-in">
+            <HeroPlate mouseX={mousePos.x} mouseY={mousePos.y} />
+            {/* Side food strip */}
+            <div className="flex flex-col gap-3 shrink-0">
+              {[
+                { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200&q=80&fit=crop", label: "Butter Chicken" },
+                { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=200&q=80&fit=crop", label: "Biryani" },
+                { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=200&q=80&fit=crop", label: "Masala Dosa" },
+              ].map((item, i) => (
+                <div key={i} className="relative w-28 h-24 rounded-2xl overflow-hidden group cursor-pointer" style={{ animationDelay: `${i * 0.15}s` }}>
+                  <img src={item.src} alt={item.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <span className="absolute bottom-1.5 left-2 right-2 text-cream text-[10px] font-medium leading-tight">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile food visual — shown below lg */}
+          <div className="lg:hidden grid grid-cols-2 gap-3 animate-fade-up-delay-3">
+            {[
+              { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400&q=80&fit=crop", label: "Butter Chicken" },
+              { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&q=80&fit=crop", label: "Biryani" },
+              { src: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=400&q=80&fit=crop", label: "Paneer Tikka" },
+              { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=400&q=80&fit=crop", label: "Masala Dosa" },
+            ].map((item, i) => (
+              <div key={i} className="relative rounded-2xl overflow-hidden aspect-square group">
+                <img src={item.src} alt={item.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <span className="absolute bottom-2 left-3 text-cream text-xs font-medium">{item.label}</span>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Decorative Lines */}
-        <div className="absolute bottom-32 left-16 hidden lg:block opacity-10">
-          <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
-            <path d="M10 10 Q 50 50 90 10" stroke="currentColor" strokeWidth="2" className="text-primary"/>
-            <path d="M10 30 Q 50 70 90 30" stroke="currentColor" strokeWidth="2" className="text-secondary"/>
-            <path d="M10 50 Q 50 90 90 50" stroke="currentColor" strokeWidth="2" className="text-primary"/>
+        {/* Liquid bottom divider */}
+        <div className="absolute bottom-0 left-0 right-0 z-10">
+          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="hsl(220 13% 9%)" />
           </svg>
         </div>
-
-        {/* Dark Curved Background - Right Side */}
-        <div className="absolute top-0 right-0 w-1/2 h-full hidden lg:block">
-          <img 
-            src="/black bg.png" 
-            alt="" 
-            className="absolute right-0 top-0 h-full w-auto object-cover object-left"
-          />
-        </div>
-
-        <div className="container mx-auto px-4 py-16 relative z-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <span className="text-secondary text-lg md:text-xl font-bold tracking-wider uppercase">
-                  CHEF'S SPECIAL
-                </span>
-                
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  Freshness<br />
-                  in every bite
-                </h1>
-                
-                <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quo studio.
-                </p>
-              </div>
-
-              {/* CTA Button */}
-              <div className="pt-4">
-                <Link to="/menu">
-                  <Button size="lg" className="text-base px-10 h-14 bg-foreground text-background hover:bg-foreground/90 shadow-lg hover:shadow-xl transition-all">
-                    Download Recipe
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Content - Food Image with Decorations */}
-            <div className="relative lg:h-[600px] flex items-center justify-center">
-              {/* Decorative Circle Rings */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] border-2 border-primary/10 rounded-full hidden lg:block"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] border-2 border-secondary/10 rounded-full hidden lg:block"></div>
-
-              {/* Floating Lemon Slices - TOP LEFT of dish (repositioned and larger) */}
-              <div className="absolute top-1 -left-16 z-0 hidden lg:block">
-                <img 
-                  src="/istockphoto-1338280922-170667a-removebg-preview 1.png" 
-                  alt="" 
-                  className="w-64 h-auto"
-                />
-              </div>
-
-              {/* Small Leaf - Top of plate */}
-              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 hidden lg:block">
-                <img 
-                  src="/leaf.png" 
-                  alt="" 
-                  className="w-20 h-auto opacity-80"
-                />
-              </div>
-
-              {/* Small Leaf - Top Right on dark bg */}
-              <div className="absolute top-12 right-8 z-20 hidden lg:block">
-                <img 
-                  src="/leaf.png" 
-                  alt="" 
-                  className="w-24 h-auto opacity-70"
-                />
-              </div>
-
-              {/* Additional decorative leaves */}
-              <div className="absolute top-1/3 right-4 z-20 hidden lg:block opacity-50">
-                <img 
-                  src="/leaf.png" 
-                  alt="" 
-                  className="w-16 h-auto rotate-45"
-                />
-              </div>
-
-              {/* Decorative small circles */}
-              <div className="absolute top-24 right-24 w-3 h-3 bg-secondary rounded-full hidden lg:block opacity-60"></div>
-              <div className="absolute top-32 right-16 w-2 h-2 bg-primary rounded-full hidden lg:block opacity-40"></div>
-              <div className="absolute bottom-24 left-8 w-4 h-4 bg-secondary rounded-full hidden lg:block opacity-50"></div>
-              <div className="absolute bottom-32 left-16 w-2 h-2 bg-primary rounded-full hidden lg:block opacity-30"></div>
-
-              {/* Main Food Image */}
-              <div className="relative w-full max-w-lg z-10">
-                <img 
-                  src="/hero1.png" 
-                  alt="Delicious food" 
-                  className="w-full h-auto relative z-10"
-                />
-              </div>
-
-            
-
-              {/* Decorative Leaves - Bottom Right on Dark BG */}
-              <div className="absolute -bottom-8 -right-12 space-y-2 hidden lg:block z-20">
-                <img src="/leaf.png" alt="" className="w-32 h-auto opacity-80" />
-                <img src="/leaf.png" alt="" className="w-36 h-auto opacity-70 ml-6" />
-              </div>
-
-              {/* Social Media Icons - Right Side (on dark bg) */}
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 space-y-6 hidden lg:flex flex-col z-30">
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer">
-                  <span className="text-xs">f</span>
-                </div>
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer">
-                  <span className="text-xs">in</span>
-                </div>
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer">
-                  <span className="text-xs">ig</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Follow Us Text - Vertical on Dark BG */}
-        <div className="absolute right-20 top-1/2 -translate-y-1/2 hidden lg:block z-30">
-          <p className="text-white/60 text-sm tracking-widest" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-            FOLLOW US
-          </p>
-        </div>
       </section>
 
-      {/* Why People Choose Us Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            {/* Left - Food Image */}
-            <div className="order-2 lg:order-1">
-              <div className="relative">
-                <img 
-                  src="/why_choose_us.png" 
-                  alt="Delicious healthy meal" 
-                  className="w-full h-auto rounded-3xl shadow-2xl"
-                />
-              </div>
-            </div>
-
-            {/* Right - Content */}
-            <div className="space-y-8 order-1 lg:order-2">
-              <div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-                  Why People Choose us?
-                </h2>
-              </div>
-
-              <div className="space-y-6">
-                {/* Convenient and Reliable */}
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center">
-                    <Truck className="w-7 h-7 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Convenient and Reliable</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Whether you dine in, take out, or order delivery, our service is convenient, fast, and reliable, making mealtime hassle-free.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Variety of Options */}
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center">
-                    <Package className="w-7 h-7 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Variety of Options</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      From hearty meals to light snacks, we offer a wide range of options to suit every taste and craving.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Eat Burger */}
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center">
-                    <ChefHat className="w-7 h-7 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Eat Burger</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Our burgers are grilled to perfection, with juicy patties and flavorful toppings that make every bite a delicious experience.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ── MARQUEE STRIP ────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-sienna/10 border-y border-sienna/20 py-4">
+        <div className="flex gap-12 animate-[marquee_20s_linear_infinite] whitespace-nowrap">
+          {["Butter Chicken", "Biryani", "Masala Dosa", "Paneer Tikka", "Chole Bhature", "Tandoori", "Rogan Josh", "Gulab Jamun",
+            "Butter Chicken", "Biryani", "Masala Dosa", "Paneer Tikka", "Chole Bhature", "Tandoori", "Rogan Josh", "Gulab Jamun"].map((item, i) => (
+            <span key={i} className="text-sm font-medium text-sienna/80 tracking-widest uppercase flex items-center gap-4">
+              {item} <span className="text-sienna">✦</span>
+            </span>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* We Offer Top Notch Section */}
+      {/* ── POPULAR DISHES — BENTO GRID ──────────────────────── */}
       {popularDishes.length > 0 && (
-        <section className="py-20 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">We Offer Top Notch</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Discover our delicious selection of freshly prepared dishes, made with the finest ingredients
+        <section className="py-28 relative">
+          <div className="container">
+            <div className="text-center mb-16 reveal">
+              <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">From the Kitchen</span>
+              <h2 className="font-serif text-5xl md:text-6xl font-bold text-cream mt-3">
+                Chef's Picks
+              </h2>
+              <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
+                Handpicked favourites that keep our guests coming back for more.
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              {popularDishes.map((dish) => (
-                <Card key={dish.id} className="overflow-hidden border-border hover:shadow-2xl transition-all duration-300 group">
-                  <div className="relative h-64 overflow-hidden bg-muted">
-                    <img 
-                      src={dish.image} 
-                      alt={dish.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    {/* Price Badge */}
-                    <div className="absolute top-4 right-4 bg-secondary text-white w-16 h-16 rounded-full flex items-center justify-center font-bold shadow-lg">
-                      ₹{dish.price}
-                    </div>
-                    {/* Prep Time Badge */}
-                    {dish.preparationTime && (
-                      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold">
-                        <Clock className="w-3 h-3" />
-                        {dish.preparationTime}m
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-6 text-center">
-                    <h3 className="text-xl font-bold mb-2">{dish.name}</h3>
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{dish.description}</p>
-                    <Link to="/menu">
-                      <Button variant="outline" className="w-full">Order Now</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+
+            {/* Bento grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger-parent">
+              {popularDishes.map((dish, i) => (
+                <DishCard key={dish.id} dish={dish} index={i} />
               ))}
             </div>
 
-            <div className="text-center mt-12">
+            <div className="text-center mt-14 reveal">
               <Link to="/menu">
-                <Button size="lg" className="px-10">
+                <Button size="lg" variant="outline" className="h-14 px-12 rounded-full border-sienna/40 text-sienna hover:bg-sienna hover:text-cream hover:border-sienna transition-all duration-300 text-base">
                   View Full Menu
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -393,174 +366,179 @@ const Index = () => {
         </section>
       )}
 
-      {/* A Very Simple Process Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
-            {/* Left - Beef Image */}
-            <div className="relative order-2 lg:order-1">
-              <div className="relative">
-                <img 
-                  src="/beef.png" 
-                  alt="Delicious beef dish" 
-                  className="w-full h-auto rounded-3xl shadow-2xl"
+      {/* ── WHY CHOOSE US ────────────────────────────────────── */}
+      <section className="py-28 relative overflow-hidden">
+        {/* Background image with parallax feel */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1800&q=80&fit=crop"
+            alt=""
+            className="w-full h-full object-cover opacity-10"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+        </div>
+
+        <div className="container relative z-10">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            {/* Left image */}
+            <div className="reveal-left relative">
+              <div className="relative rounded-3xl overflow-hidden sienna-glow">
+                <img
+                  src="/why_choose_us.png"
+                  alt="Why choose us"
+                  className="w-full h-auto object-cover"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
+              {/* Floating glass card */}
+              <div className="glass absolute -bottom-6 -right-6 p-5 rounded-2xl max-w-[200px]">
+                <div className="text-3xl font-serif font-bold text-sienna">98%</div>
+                <div className="text-sm text-muted-foreground mt-1">Customer satisfaction rate</div>
+              </div>
+              {/* Morphing accent shape */}
+              <div className="absolute -top-8 -left-8 w-32 h-32 bg-sienna/15 animate-morph blur-xl" />
             </div>
 
-            {/* Right - Content */}
-            <div className="space-y-8 order-1 lg:order-2">
+            {/* Right content */}
+            <div className="space-y-10 reveal-right">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  A Very Simple Process<br />
-                  To Make Order Your<br />
-                  Favourite Foods
+                <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Why Foodizzz</span>
+                <h2 className="font-serif text-5xl font-bold text-cream mt-3 leading-tight">
+                  Food is more than<br />
+                  <span className="text-gradient italic">a meal</span>
                 </h2>
+                <p className="text-muted-foreground mt-5 leading-relaxed">
+                  We believe every plate should tell a story. From sourcing the finest spices to plating with care — every detail matters.
+                </p>
               </div>
 
-              <div className="space-y-4">
-                {orderSteps.map((step, index) => (
-                  <div key={index} className="flex items-start gap-4 p-4 rounded-lg hover:bg-background transition-colors">
-                    <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                      {step.icon}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 stagger-parent">
+                {whyUs.map((item) => (
+                  <div key={item.title} className="glass p-5 rounded-2xl group hover:border-sienna/30 transition-all duration-300 reveal">
+                    <div className="w-12 h-12 rounded-xl bg-sienna/15 flex items-center justify-center text-sienna mb-4 group-hover:bg-sienna/25 transition-colors">
+                      {item.icon}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-base mb-1">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
-                    </div>
+                    <h3 className="font-semibold text-cream mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
-
-              <div className="pt-4">
-                <Link to="/menu">
-                  <Button size="lg" className="px-8">
-                    Order Food Now
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose OrderEase</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Committed to excellence in every order
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
-              <div key={index} className="text-center p-6 rounded-xl hover:bg-muted/50 transition-colors">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Want to be a part of Foodtime Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-              {/* Background Image with Overlay */}
-              <div className="relative h-[400px] md:h-[500px]">
-                <img 
-                  src="/foodtime.png" 
-                  alt="Chef cooking with fire" 
-                  className="w-full h-full object-cover"
-                />
-                {/* Dark Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/50 to-black/30"></div>
-                
-                {/* Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                    Want to be a part of Foodtime?
-                  </h2>
-                  <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl">
-                    List your restaurant or shop on foodtime.
-                  </p>
-                  <Link to="/contact">
-                    <Button size="lg" variant="secondary" className="px-10 h-14 text-base shadow-xl hover:shadow-2xl transition-all">
-                      Get started
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+      {/* ── FULL-WIDTH FOOD SHOWCASE ──────────────────────────── */}
+      <section className="relative h-[70vh] overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=1800&q=80&fit=crop"
+          alt="Indian feast"
+          className="w-full h-[120%] object-cover -mt-[10%]"
+          style={{ objectPosition: "center 40%" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="container">
+            <div className="max-w-xl reveal">
+              <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">The Experience</span>
+              <h2 className="font-serif text-5xl md:text-6xl font-bold text-cream mt-3 leading-tight">
+                A feast for all<br />the senses
+              </h2>
+              <p className="text-muted-foreground mt-5 text-lg leading-relaxed">
+                Aromas that transport you, textures that delight, and flavours that linger — this is what we serve.
+              </p>
+              <Link to="/menu" className="inline-block mt-8">
+                <Button size="lg" className="h-14 px-10 bg-sienna hover:bg-sienna-light text-cream rounded-full btn-magnetic shadow-lg shadow-sienna/25">
+                  Order Now <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
+        {/* Liquid top */}
+        <div className="absolute top-0 left-0 right-0">
+          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16 rotate-180">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="hsl(220 13% 9%)" />
+          </svg>
+        </div>
+        {/* Liquid bottom */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="hsl(220 13% 9%)" />
+          </svg>
+        </div>
       </section>
 
-      {/* Customer Reviews Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Customer Reviews</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              What our customers say about us
-            </p>
+      {/* ── TESTIMONIALS ─────────────────────────────────────── */}
+      <section className="py-28">
+        <div className="container">
+          <div className="text-center mb-16 reveal">
+            <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Testimonials</span>
+            <h2 className="font-serif text-5xl font-bold text-cream mt-3">What guests say</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-border bg-background">
-                <CardContent className="p-8">
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <svg key={i} className="w-5 h-5 text-secondary fill-current" viewBox="0 0 20 20">
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                      </svg>
-                    ))}
+          <div className="grid md:grid-cols-3 gap-6 stagger-parent">
+            {[
+              { name: "Priya S.", text: "The Butter Chicken here is the best I've had outside my grandmother's kitchen. Absolutely divine.", rating: 5 },
+              { name: "Rahul M.", text: "Hyderabadi Biryani was perfectly layered — every grain of rice was infused with flavour. Will be back.", rating: 5 },
+              { name: "Ananya K.", text: "The ambience, the food, the speed — everything is top-notch. My go-to for special occasions.", rating: 5 },
+            ].map((t, i) => (
+              <div key={i} className="glass p-8 rounded-3xl card-premium reveal">
+                <div className="flex gap-1 mb-5">
+                  {Array(t.rating).fill(0).map((_, j) => (
+                    <Star key={j} className="w-4 h-4 text-gold fill-gold" />
+                  ))}
+                </div>
+                <p className="text-muted-foreground leading-relaxed mb-6 italic">"{t.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-sienna/20 flex items-center justify-center text-sienna font-bold text-sm">
+                    {t.name[0]}
                   </div>
-                  <p className="text-muted-foreground mb-4 leading-relaxed">{testimonial.text}</p>
-                  <p className="font-semibold">{testimonial.name}</p>
-                </CardContent>
-              </Card>
+                  <span className="font-medium text-cream">{t.name}</span>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-primary/90 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Order?
-          </h2>
-          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-            Browse our menu and place your order now. Fresh, delicious food is just a few clicks away.
-          </p>
-          <Link to="/menu">
-            <Button size="lg" variant="secondary" className="text-base px-10 h-14 shadow-lg hover:shadow-xl transition-all">
-              Order Now
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
+      {/* ── CTA BANNER ───────────────────────────────────────── */}
+      <section className="py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-sienna/20 via-background to-gold/10" />
+        <div className="absolute top-0 left-0 right-0">
+          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16 rotate-180">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="hsl(220 13% 9%)" />
+          </svg>
+        </div>
+        <div className="container relative z-10 text-center">
+          <div className="reveal">
+            <h2 className="font-serif text-5xl md:text-6xl font-bold text-cream mb-6">
+              Ready to <span className="text-shimmer">indulge?</span>
+            </h2>
+            <p className="text-muted-foreground text-xl mb-10 max-w-xl mx-auto">
+              Fresh, authentic Indian food — just a few taps away.
+            </p>
+            <Link to="/menu">
+              <Button size="lg" className="h-16 px-14 bg-sienna hover:bg-sienna-light text-cream rounded-full text-lg font-medium btn-magnetic shadow-2xl shadow-sienna/30 animate-pulse-glow">
+                Order Now
+                <ArrowRight className="ml-3 w-6 h-6" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="w-full bg-background border-t border-border py-8 text-center text-muted-foreground text-sm">
-        <div className="container mx-auto px-4">
-          <p>© {new Date().getFullYear()} OrderEase. All rights reserved.</p>
+      {/* ── FOOTER ───────────────────────────────────────────── */}
+      <footer className="border-t border-white/5 py-10">
+        <div className="container flex flex-col md:flex-row items-center justify-between gap-4 text-muted-foreground text-sm">
+          <BrandLogo size="sm" />
+          <p>© {new Date().getFullYear()} Foodizzz. All rights reserved.</p>
+          <div className="flex gap-6">
+            <Link to="/menu" className="hover:text-sienna transition-colors">Menu</Link>
+            <Link to="/about" className="hover:text-sienna transition-colors">About</Link>
+            <Link to="/contact" className="hover:text-sienna transition-colors">Contact</Link>
+          </div>
         </div>
       </footer>
     </div>
   );
-};
-
-export default Index;
+}

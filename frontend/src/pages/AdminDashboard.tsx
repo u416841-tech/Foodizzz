@@ -101,6 +101,7 @@ export default function AdminDashboard() {
             })),
             customerName: order.customer?.name || '',
             customerPhone: order.customer?.phone || '',
+            customerAddress: order.customer?.address || '',
             totalAmount,
             status: order.status,
             estimatedTime,
@@ -668,7 +669,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <Navbar isAdmin onLogout={handleLogout} />
       
-      <main className="container py-4 sm:py-8 px-4 sm:px-6">
+      <main className="container py-4 sm:py-8 px-4 sm:px-6 animate-fade-up pt-24">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">Restaurant Dashboard</h1>
           <p className="text-sm sm:text-base text-muted-foreground">

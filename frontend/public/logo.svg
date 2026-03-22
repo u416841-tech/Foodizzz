@@ -1,4 +1,17 @@
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="40" height="40" rx="8" fill="#6366F1"/>
-  <text x="50%" y="55%" text-anchor="middle" fill="white" font-size="18" font-family="Arial, sans-serif" font-weight="bold" dy=".3em">OE</text>
-</svg> 
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Dark charcoal background circle -->
+  <circle cx="32" cy="32" r="32" fill="#1a1d23"/>
+  <!-- Plate base -->
+  <circle cx="32" cy="36" r="16" fill="#2a2d35"/>
+  <circle cx="32" cy="36" r="13" fill="#222530"/>
+  <!-- Steam lines -->
+  <path d="M24 18 Q25 14 24 10" stroke="#C1622F" stroke-width="2" stroke-linecap="round"/>
+  <path d="M32 16 Q33 12 32 8" stroke="#C1622F" stroke-width="2" stroke-linecap="round"/>
+  <path d="M40 18 Q41 14 40 10" stroke="#C1622F" stroke-width="2" stroke-linecap="round"/>
+  <!-- Food on plate — stylised curry swirl -->
+  <circle cx="32" cy="36" r="7" fill="#C1622F" opacity="0.9"/>
+  <circle cx="32" cy="36" r="4" fill="#d4743f" opacity="0.8"/>
+  <circle cx="32" cy="36" r="2" fill="#e8a070" opacity="0.9"/>
+  <!-- Plate rim highlight -->
+  <circle cx="32" cy="36" r="13" stroke="#C1622F" stroke-width="0.8" stroke-opacity="0.3" fill="none"/>
+</svg>

@@ -58,7 +58,7 @@ export default function Checkout() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'OrderEase',
+        name: 'Foodizzz',
         description: 'Order Payment',
         order_id: orderData.id,
         handler: async function (response) {
@@ -75,7 +75,7 @@ export default function Checkout() {
               customer: {
                 name: customerInfo.name,
                 phone: customerInfo.phone,
-                address: '',
+                address: customerInfo.address || '',
               },
               payment: {
                 razorpay_order_id: orderData.id,
@@ -118,7 +118,7 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartItemsCount={cartItems.length} />
-      <main className="container py-8">
+      <main className="container py-8 animate-fade-up pt-24">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Checkout</h1>
           <div className="grid lg:grid-cols-2 gap-8">

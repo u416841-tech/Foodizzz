@@ -1,7 +1,8 @@
-import { ShoppingCart, LogOut, User, Menu as MenuIcon, Home, Phone, Info } from "lucide-react";
+import { ShoppingCart, LogOut, User, Menu as MenuIcon, X } from "lucide-react";
 import { Button } from "./button";
-import { Badge } from "./badge";
 import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrandLogo } from "./brand-logo";
 
 interface NavbarProps {
   cartItemsCount?: number;
@@ -11,108 +12,122 @@ interface NavbarProps {
 
 export function Navbar({ cartItemsCount = 0, isAdmin = false, onLogout }: NavbarProps) {
   const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const isActive = (path: string) => location.pathname === path;
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const navLinks = isAdmin
+    ? [{ to: "/admin/dashboard", label: "Dashboard" }]
+    : [
+        { to: "/", label: "Home" },
+        { to: "/menu", label: "Menu" },
+        { to: "/about", label: "About" },
+        { to: "/track", label: "Track Order" },
+        { to: "/contact", label: "Contact" },
+      ];
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-sm">
-      <div className="container flex h-16 items-center justify-between px-4">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? "glass border-b border-white/8 shadow-2xl shadow-black/30"
+          : "bg-transparent border-b border-transparent"
+      }`}
+    >
+      <div className="container flex h-18 items-center justify-between px-4 py-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors shadow-md">
-            <span className="text-primary-foreground font-bold text-xl">O</span>
-          </div>
-          <span className="font-bold text-2xl text-foreground">OrderEase</span>
+        <Link to="/" className="flex items-center group">
+          <BrandLogo size="sm" />
         </Link>
 
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map((link) => (
+            <Link key={link.to} to={link.to}>
+              <button
+                className={`relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
+                  isActive(link.to)
+                    ? "text-sienna"
+                    : "text-muted-foreground hover:text-cream"
+                }`}
+              >
+                {link.label}
+                {isActive(link.to) && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sienna" />
+                )}
+              </button>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
           {!isAdmin ? (
             <>
-              <Link to="/">
-                <Button 
-                  variant={isActive('/') ? 'default' : 'ghost'}
-                  className="gap-2"
-                >
-                  <Home className="w-4 h-4" />
-                  Home
-                </Button>
+              <Link to="/cart">
+                <button className="relative p-2 text-muted-foreground hover:text-cream transition-colors">
+                  <ShoppingCart className="w-5 h-5" />
+                  {cartItemsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-sienna text-cream text-xs font-bold rounded-full flex items-center justify-center">
+                      {cartItemsCount}
+                    </span>
+                  )}
+                </button>
               </Link>
               <Link to="/menu">
-                <Button 
-                  variant={isActive('/menu') ? 'default' : 'ghost'}
-                  className="gap-2"
-                >
-                  <MenuIcon className="w-4 h-4" />
-                  Menu
-                </Button>
-              </Link>
-              <Link to="/about">
-                <Button 
-                  variant={isActive('/about') ? 'default' : 'ghost'}
-                  className="gap-2"
-                >
-                  <Info className="w-4 h-4" />
-                  About
-                </Button>
-              </Link>
-              <Link to="/track">
-                <Button 
-                  variant={isActive('/track') ? 'default' : 'ghost'}
-                >
-                  Track Order
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button 
-                  variant={isActive('/contact') ? 'default' : 'ghost'}
-                  className="gap-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  Contact
+                <Button size="sm" className="hidden md:flex h-9 px-5 bg-sienna hover:bg-sienna-light text-cream rounded-full text-sm font-medium shadow-lg shadow-sienna/25 transition-all">
+                  Order Now
                 </Button>
               </Link>
             </>
           ) : (
-            <Link to="/admin/dashboard">
-              <Button 
-                variant={isActive('/admin/dashboard') ? 'default' : 'ghost'}
-              >
-                Dashboard
-              </Button>
-            </Link>
-          )}
-        </nav>
-
-        {/* Actions */}
-        <div className="flex items-center space-x-4">
-          {!isAdmin ? (
-            <Link to="/cart">
-              <Button variant="outline" size="default" className="relative h-10 px-4 gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="hidden sm:inline">Cart</span>
-                {cartItemsCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs font-semibold"
-                  >
-                    {cartItemsCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-          ) : (
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>Admin</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={onLogout} className="h-10">
-                <LogOut className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <User className="w-4 h-4" /> Admin
+              </span>
+              <button onClick={onLogout} className="p-2 text-muted-foreground hover:text-cream transition-colors">
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           )}
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 text-muted-foreground hover:text-cream transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden glass border-t border-white/8 px-4 py-6 space-y-2">
+          {navLinks.map((link) => (
+            <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)}>
+              <div className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                isActive(link.to) ? "bg-sienna/15 text-sienna" : "text-muted-foreground hover:text-cream hover:bg-white/5"
+              }`}>
+                {link.label}
+              </div>
+            </Link>
+          ))}
+          {!isAdmin && (
+            <Link to="/menu" onClick={() => setMobileOpen(false)}>
+              <Button className="w-full mt-3 bg-sienna hover:bg-sienna-light text-cream rounded-xl">
+                Order Now
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
     </header>
   );
 }

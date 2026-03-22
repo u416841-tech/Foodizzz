@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navbar } from "@/components/ui/navbar";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,19 +31,19 @@ export default function Contact() {
     {
       icon: <Phone className="w-6 h-6" />,
       title: "Phone",
-      details: "+1 (555) 123-4567",
-      link: "tel:+15551234567"
+      details: "+91 8857905666",
+      link: "tel:91 8857905666"
     },
     {
       icon: <Mail className="w-6 h-6" />,
       title: "Email",
-      details: "hello@orderease.com",
-      link: "mailto:hello@orderease.com"
+      details: "wadiledev25@gmail.com",
+      link: "mailto:wadiledev25@gmail.com"
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       title: "Address",
-      details: "123 Food Street, Culinary City, FC 12345",
+      details: "1504 IBMM Road Dange Chowk Wakad Pune",
       link: "#"
     },
     {
@@ -57,12 +58,13 @@ export default function Contact() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container py-16 px-4">
+      <main className="container py-16 px-4 animate-fade-up pt-32">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
+          <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Reach Out</span>
+          <h1 className="font-serif text-5xl md:text-6xl font-bold text-cream mt-3 mb-4">Get in Touch</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Have a question or feedback? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            Have a question or feedback? We'd love to hear from you.
           </p>
         </div>
 
@@ -80,7 +82,7 @@ export default function Contact() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder="Enter your name "
                     required
                   />
                 </div>
@@ -94,7 +96,7 @@ export default function Contact() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="john@example.com"
+                    placeholder="Enter email "
                     required
                   />
                 </div>
@@ -108,7 +110,7 @@ export default function Contact() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="Enter tele no "
                   />
                 </div>
 
@@ -180,7 +182,7 @@ export default function Contact() {
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="OrderEase Location"
+                  title="Foodizzz Location"
                 ></iframe>
               </div>
             </Card>
@@ -190,8 +192,9 @@ export default function Contact() {
 
       {/* Footer */}
       <footer className="w-full bg-background border-t border-border py-8 text-center text-muted-foreground text-sm mt-16">
-        <div className="container mx-auto px-4">
-          <p>© {new Date().getFullYear()} OrderEase. All rights reserved.</p>
+        <div className="container mx-auto px-4 flex flex-col items-center gap-3">
+          <BrandLogo size="sm" />
+          <p>© {new Date().getFullYear()} Foodizzz. All rights reserved.</p>
         </div>
       </footer>
     </div>

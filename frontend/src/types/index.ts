@@ -25,6 +25,7 @@ export interface Order {
   }>;
   customerName: string;
   customerPhone: string;
+  customerAddress?: string;
   totalAmount: number;
   status: OrderStatus;
   estimatedTime: number; // in minutes

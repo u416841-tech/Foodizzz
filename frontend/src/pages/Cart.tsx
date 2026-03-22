@@ -16,7 +16,8 @@ export default function Cart() {
 
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
-    phone: ""
+    phone: "",
+    address: ""
   });
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
@@ -42,7 +43,7 @@ export default function Cart() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar cartItemsCount={0} />
-        <main className="container py-16 px-4">
+        <main className="container py-16 px-4 animate-fade-up">
           <div className="max-w-2xl mx-auto text-center">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
               <ShoppingBag className="w-12 h-12 text-muted-foreground" />
@@ -63,7 +64,7 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartItemsCount={cartItems.length} />
-      <main className="container py-12 px-4">
+      <main className="container py-12 px-4 animate-fade-up pt-24">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold mb-8">Your Cart</h1>
           <div className="grid lg:grid-cols-3 gap-8">
@@ -153,6 +154,15 @@ export default function Cart() {
                       value={customerInfo.phone}
                       onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address" className="text-sm font-semibold mb-2 block">Delivery Address</Label>
+                    <Input
+                      id="address"
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Enter your delivery address"
                     />
                   </div>
                 </CardContent>
