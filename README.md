@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍽️ OrderEase – Restaurant Order Management System
 
 [![React](https://img.shields.io/badge/Frontend-React-blue)](https://reactjs.org/)
@@ -45,3 +46,7 @@
 - **Deployment:** Render (Frontend + Backend)
 
 ---
+=======
+# Foodizzz
+Restaurant Store
+>>>>>>> 227baf25038844aed4063742d47893d6bbb7a25b
