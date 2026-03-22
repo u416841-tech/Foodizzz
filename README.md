@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# 🍽️ OrderEase – Restaurant Order Management System
+# 🍽️ Foodizzz – Restaurant Order Management System
 
 [![React](https://img.shields.io/badge/Frontend-React-blue)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js-green)](https://nodejs.org/)
@@ -16,7 +16,7 @@
 
 ## 📌 Overview
 
-**OrderEase** is a full-stack restaurant order management system that enables customers to place orders online without login and track them via a unique order ID. On the admin side, restaurant staff can monitor, manage, and update the status of incoming orders using a real-time dashboard. To test admin login use username: admin and password: admmin123.
+**Foodizzz** is a full-stack restaurant order management system that enables customers to place orders online without login and track them via a unique order ID. On the admin side, restaurant staff can monitor, manage, and update the status of incoming orders using a real-time dashboard. To test admin login use username: admin and password: admmin123.
 
 ---
 
