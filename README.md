@@ -9,8 +9,6 @@
 [![Razorpay](https://img.shields.io/badge/Payment-Razorpay-0054ff)](https://razorpay.com/)
 [![Status](https://img.shields.io/badge/Deployment-Live-green)](https://order-ease-i1t7.onrender.com)
 
-> 🔗 **Live Project**: [https://order-ease-i1t7.onrender.com](https://order-ease-i1t7.onrender.com)  
-> 📂 **GitHub Repository**: [OrderEase GitHub Repo](https://github.com/sonar-vaibhav/order-ease)
 
 ---
 
