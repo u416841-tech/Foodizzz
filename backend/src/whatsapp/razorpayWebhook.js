@@ -285,7 +285,7 @@ class RazorpayWebhookHandler {
 
       if (!razorpay_payment_id || !razorpay_payment_link_id) {
         // Redirect to track page with error
-        return res.redirect('https://order-ease-i1t7.onrender.com/track?error=payment_info_missing');
+        return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=payment_info_missing');
       }
 
       // Find the WhatsApp order
@@ -295,7 +295,7 @@ class RazorpayWebhookHandler {
 
       if (!whatsappOrder) {
         // Redirect to track page with error
-        return res.redirect(`https://order-ease-i1t7.onrender.com/track?error=order_not_found&payment_id=${razorpay_payment_id}`);
+        return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=order_not_found&payment_id=${razorpay_payment_id}`);
       }
 
       // Get the main order
@@ -303,16 +303,16 @@ class RazorpayWebhookHandler {
 
       if (!mainOrder) {
         // Redirect to track page with error
-        return res.redirect('https://order-ease-i1t7.onrender.com/track?error=order_processing');
+        return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=order_processing');
       }
 
       // Successful payment - redirect to track page with order ID
-      return res.redirect(`https://order-ease-i1t7.onrender.com/track?order_id=${mainOrder.displayOrderId}&payment_success=true&source=whatsapp`);
+      return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?order_id=${mainOrder.displayOrderId}&payment_success=true&source=whatsapp`);
 
     } catch (error) {
       console.error('Error handling payment success callback:', error);
       // Redirect to track page with error
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=processing_error');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=processing_error');
     }
   }
 }

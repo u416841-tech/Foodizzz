@@ -23,7 +23,7 @@ router.get('/payment-success', async (req, res) => {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.query;
 
     if (!razorpay_payment_id || !razorpay_order_id) {
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=payment_info_missing');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=payment_info_missing');
     }
 
     // Verify payment signature (optional but recommended)
@@ -35,15 +35,15 @@ router.get('/payment-success', async (req, res) => {
 
     if (razorpay_signature && razorpay_signature !== expectedSignature) {
       console.error('Invalid payment signature');
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=invalid_signature');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=invalid_signature');
     }
 
     // For now, just redirect to track page with success
-    return res.redirect(`https://order-ease-i1t7.onrender.com/track?payment_success=true&source=website`);
+    return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?payment_success=true&source=website`);
 
   } catch (error) {
     console.error('Error handling payment success:', error);
-    return res.redirect('https://order-ease-i1t7.onrender.com/track?error=processing_error');
+    return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=processing_error');
   }
 });
 

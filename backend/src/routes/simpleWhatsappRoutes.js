@@ -56,7 +56,7 @@ router.get('/payment-success', async (req, res) => {
     const { razorpay_payment_id, razorpay_payment_link_id } = req.query;
 
     if (!razorpay_payment_id || !razorpay_payment_link_id) {
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=payment_info_missing');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=payment_info_missing');
     }
 
     console.log('💳 Payment success callback:', { razorpay_payment_id, razorpay_payment_link_id });
@@ -85,7 +85,7 @@ router.get('/payment-success', async (req, res) => {
             phoneNumber: whatsappOrder.phoneNumber
           });
 
-          return res.redirect(`https://order-ease-i1t7.onrender.com/track?payment_success=true&source=whatsapp`);
+          return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?payment_success=true&source=whatsapp`);
         }
       }
 
@@ -109,18 +109,18 @@ router.get('/payment-success', async (req, res) => {
         const PaymentNotifications = require('../whatsapp/paymentNotifications');
         await PaymentNotifications.sendPaymentSuccessMessage(pendingOrder.customer.phone, pendingOrder);
 
-        return res.redirect(`https://order-ease-i1t7.onrender.com/track?order_id=${pendingOrder.displayOrderId}&payment_success=true&source=whatsapp`);
+        return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?order_id=${pendingOrder.displayOrderId}&payment_success=true&source=whatsapp`);
       }
 
     } catch (error) {
       console.error('Error processing payment success:', error);
     }
 
-    return res.redirect('https://order-ease-i1t7.onrender.com/track?error=order_not_found');
+    return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=order_not_found');
 
   } catch (error) {
     console.error('Error handling payment success:', error);
-    return res.redirect('https://order-ease-i1t7.onrender.com/track?error=processing_error');
+    return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=processing_error');
   }
 });
 

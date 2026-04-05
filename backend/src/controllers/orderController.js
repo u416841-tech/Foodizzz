@@ -143,7 +143,7 @@ exports.handlePaymentSuccess = async (req, res) => {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.query;
 
     if (!razorpay_payment_id || !razorpay_order_id) {
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=payment_info_missing');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=payment_info_missing');
     }
 
     // Verify payment signature (optional but recommended)
@@ -155,7 +155,7 @@ exports.handlePaymentSuccess = async (req, res) => {
 
     if (razorpay_signature && razorpay_signature !== expectedSignature) {
       console.error('Invalid payment signature');
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=invalid_signature');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=invalid_signature');
     }
 
     // Find the order by payment ID or order ID
@@ -192,14 +192,14 @@ exports.handlePaymentSuccess = async (req, res) => {
       await order.save();
 
       // Redirect to track page with order ID
-      return res.redirect(`https://order-ease-i1t7.onrender.com/track?order_id=${order.displayOrderId}&payment_success=true&source=website`);
+      return res.redirect(`${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?order_id=${order.displayOrderId}&payment_success=true&source=website`);
     } else {
       // Order not found, redirect with error
-      return res.redirect('https://order-ease-i1t7.onrender.com/track?error=order_not_found');
+      return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=order_not_found');
     }
 
   } catch (error) {
     console.error('Error handling payment success:', error);
-    return res.redirect('https://order-ease-i1t7.onrender.com/track?error=processing_error');
+    return res.redirect('${process.env.FRONTEND_URL || "https://foodizzz.onrender.com"}/track?error=processing_error');
   }
 };

@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postbuild": "cpx ./public/static.json ./dist"
+    "postbuild": "cpx ./public/static.json ./dist && cpx ./public/_redirects ./dist"
   },
   "proxy": "http://localhost:5000",
   "dependencies": {
