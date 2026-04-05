@@ -18,15 +18,18 @@ class WhatsAppService {
         return false;
       }
 
+      // WhatsApp hard limit is 4096 chars — truncate with notice if exceeded
+      const safeMessage = message.length > 4096
+        ? message.substring(0, 4050) + '\n\n_...message truncated_'
+        : message;
+
       const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
       
       const payload = {
         messaging_product: 'whatsapp',
         to: to,
         type: 'text',
-        text: {
-          body: message
-        }
+        text: { body: safeMessage }
       };
 
       const response = await axios.post(url, payload, {

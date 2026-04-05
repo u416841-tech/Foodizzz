@@ -14,11 +14,18 @@ export interface CartItem {
   quantity: number;
 }
 
-export type OrderStatus = 'queued' | 'preparing' | 'ready' | 'picked';
+export type OrderStatus = 'queued' | 'preparing' | 'ready' | 'picked' | 'out_for_delivery';
+
+export interface DeliveryPartner {
+  _id: string;
+  name: string;
+  phone: string;
+  status: 'available' | 'busy';
+}
 
 export interface Order {
   id: string;
-  _id?: string; // MongoDB ObjectId for backend operations
+  _id?: string;
   items: Array<{
     menuItem: MenuItem;
     quantity: number;
@@ -28,10 +35,11 @@ export interface Order {
   customerAddress?: string;
   totalAmount: number;
   status: OrderStatus;
-  estimatedTime: number; // in minutes
+  estimatedTime: number;
   createdAt: Date;
   updatedAt: Date;
   timeRequired?: number;
+  assignedPartner?: DeliveryPartner | null;
 }
 
 export interface OrderAnalytics {

@@ -44,10 +44,11 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Get order by ID
+// Get order by ID — populate assignedPartner
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id)
+      .populate('assignedPartner', 'name phone status');
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
   } catch (err) {
@@ -70,11 +71,12 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// Get all orders
+// Get all orders — populate assignedPartner so customer tracking shows driver info
 exports.getAllOrders = async (req, res) => {
   try {
-    // Sort by createdAt in descending order (newest first)
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find()
+      .sort({ createdAt: -1 })
+      .populate('assignedPartner', 'name phone status');
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });

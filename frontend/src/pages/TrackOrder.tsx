@@ -6,99 +6,112 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { OrderCard } from "@/components/OrderCard";
-import { Search, Clock, MapPin, CheckCircle2 } from "lucide-react";
-// import { mockOrders } from "@/data/mockData";
+import { Search, Clock, MapPin, CheckCircle2, Phone, Bike } from "lucide-react";
 
-// Countdown timer component
-function Countdown({ startTime, durationMinutes }: { startTime: string, durationMinutes: number }) {
-  const calculateRemaining = () => {
-    const start = new Date(startTime).getTime();
-    const now = new Date().getTime();
-    const end = start + durationMinutes * 60 * 1000;
-    const remaining = end - now;
-
-    if (remaining <= 0) return { minutes: 0, seconds: 0 };
-    
-    return {
-      minutes: Math.floor((remaining / 1000 / 60) % 60),
-      seconds: Math.floor((remaining / 1000) % 60)
-    };
-  };
-
-  const [remaining, setRemaining] = useState(calculateRemaining());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setRemaining(calculateRemaining());
-    }, 1000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line
-  }, [startTime, durationMinutes]);
-
-  return (
-    <div className="text-sm text-muted-foreground">
-      {/* Time remaining: {String(remaining.minutes).padStart(2, '0')}:{String(remaining.seconds).padStart(2, '0')} */}
-    </div>
-  );
-}
+// ── localStorage dispatch key (shared with AdminDashboard) ──
+const DISPATCH_KEY = "foodizzz_dispatch";
 
 export default function TrackOrder() {
-  // Backend URL configured from environment
   const { orderId } = useParams();
   const [searchOrderId, setSearchOrderId] = useState(orderId || "");
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const lsPollingRef = useRef<NodeJS.Timeout | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // ── Driver comes from API (assignedPartner) OR localStorage dispatch ──
+  // No random auto-assign — driver only appears after Admin manually assigns
+  const [assignedDriver, setAssignedDriver] = useState<{ name: string; phone: string } | null>(null);
+
+  // Check localStorage for a dispatched driver for the current order
+  const checkLocalDispatch = (orderId: string) => {
+    try {
+      const raw = localStorage.getItem(DISPATCH_KEY);
+      if (!raw) return null;
+      const map = JSON.parse(raw);
+      return map[orderId] || null;
+    } catch { return null; }
+  };
+
+  // Merge API order with any localStorage dispatch override
+  const mergeDispatch = (order: any) => {
+    if (!order) return order;
+    const dispatch = checkLocalDispatch(order.displayOrderId || order._id);
+    if (dispatch) {
+      return {
+        ...order,
+        assignedPartner: dispatch.partner,
+        status: dispatch.status || order.status,
+      };
+    }
+    return order;
+  };
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const fetchOrder = async (id: string) => {
     setLoading(true);
     setError("");
-    setCurrentOrder(null);
     try {
       const res = await fetch(`${BACKEND_URL}/api/orders`);
       if (!res.ok) throw new Error("Order not found");
       const orders = await res.json();
-      const foundOrder = orders.find((order: any) => order.displayOrderId === id || order._id === id);
+      const foundOrder = orders.find((o: any) => o.displayOrderId === id || o._id === id);
       if (foundOrder) {
-        setCurrentOrder(foundOrder);
+        const merged = mergeDispatch(foundOrder);
+        setCurrentOrder(merged);
+        setAssignedDriver(merged.assignedPartner || null);
         setLastUpdated(new Date());
       } else {
         setError("Order not found");
       }
-    } catch (err) {
+    } catch {
       setError("Order not found");
     } finally {
       setLoading(false);
     }
   };
 
+  // Poll localStorage every 2s so driver card appears the moment Admin assigns
+  const startLsPolling = (id: string) => {
+    if (lsPollingRef.current) clearInterval(lsPollingRef.current);
+    lsPollingRef.current = setInterval(() => {
+      const dispatch = checkLocalDispatch(id);
+      if (dispatch && (!assignedDriver || assignedDriver.name !== dispatch.partner?.name)) {
+        setAssignedDriver(dispatch.partner);
+        setCurrentOrder((prev: any) => prev
+          ? { ...prev, assignedPartner: dispatch.partner, status: dispatch.status || prev.status }
+          : prev
+        );
+      }
+    }, 2000);
+  };
+
   const handleSearch = async () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     await fetchOrder(searchOrderId);
-    // Start polling every 10 seconds
     pollingRef.current = setInterval(() => fetchOrder(searchOrderId), 10000);
+    startLsPolling(searchOrderId);
   };
 
   useEffect(() => {
     if (orderId) {
       setSearchOrderId(orderId);
       fetchOrder(orderId);
-      // Start polling every 10 seconds
       pollingRef.current = setInterval(() => fetchOrder(orderId), 10000);
+      startLsPolling(orderId);
     }
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (lsPollingRef.current) clearInterval(lsPollingRef.current);
     };
     // eslint-disable-next-line
   }, [orderId]);
 
   const getOrderProgress = (status: string) => {
-    const stages = ['queued', 'preparing', 'ready'];
+    const stages = ['queued', 'preparing', 'ready', 'out_for_delivery'];
     const currentIndex = stages.indexOf(status);
     return stages.map((stage, index) => ({
       stage,
@@ -122,7 +135,7 @@ export default function TrackOrder() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container py-8 animate-fade-up pt-24">
+      <main className="container py-8 page-fade-up pt-24">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8 gap-4">
             <div>
@@ -168,9 +181,8 @@ export default function TrackOrder() {
 
           {/* Order Results */}
           {currentOrder ? (
-            <div className="space-y-8">
-              {/* Order Progress */}
-              <Card>
+            <div className="space-y-6">
+              <Card className="page-fade-up stagger-1 transition-all duration-300 hover:border-sienna/20">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -220,6 +232,7 @@ export default function TrackOrder() {
                               {item.stage === "queued" && "Queued"}
                               {item.stage === "preparing" && "Preparing"}
                               {item.stage === "ready" && "Ready"}
+                              {item.stage === "out_for_delivery" && "On the Way"}
                             </p>
                           </div>
                           {index < progressMeta.progress.length - 1 && (
@@ -263,25 +276,54 @@ export default function TrackOrder() {
                         <Badge className="bg-warning text-warning-foreground mb-2">
                           Estimated Time: {currentOrder.timeRequired ? currentOrder.timeRequired : 'N/A'} minutes
                         </Badge>
-                        {currentOrder.status === 'preparing' && currentOrder.preparationStartedAt && currentOrder.timeRequired ? (
-                          <Countdown startTime={currentOrder.preparationStartedAt} durationMinutes={currentOrder.timeRequired} />
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            We're working on your order. You'll be notified when it's ready.
-                          </p>
-                        )}
+                        <p className="text-sm text-muted-foreground">
+                          We're working on your order. You'll be notified when it's ready.
+                        </p>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Order Details */}
-              {/* Show order details in a simple way for users */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Order Details</CardTitle>
-                </CardHeader>
+              {/* Driver card — hidden until Admin manually assigns via Dispatch tab */}
+              {assignedDriver ? (
+                <Card className="border-sienna/30 bg-sienna/5 page-fade-up stagger-2 transition-all duration-300 hover:border-sienna/50 hover:shadow-lg hover:shadow-sienna/10">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-sienna/20 flex items-center justify-center text-sienna">
+                          <Bike className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-sienna font-medium tracking-widest uppercase mb-0.5">Driver Assigned</p>
+                          <p className="text-cream font-semibold text-base">{assignedDriver.name}</p>
+                          <p className="text-muted-foreground text-sm">{assignedDriver.phone}</p>
+                        </div>
+                      </div>
+                      <a href={`tel:${assignedDriver.phone}`}>
+                        <Button className="bg-sienna hover:bg-sienna/80 text-cream rounded-full gap-2 shadow-lg shadow-sienna/25">
+                          <Phone className="w-4 h-4" />
+                          Call Driver
+                        </Button>
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : currentOrder.status !== 'picked' && (
+                // Searching state — shown while Admin hasn't dispatched yet
+                <Card className="border-white/10 bg-white/3">
+                  <CardContent className="p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full border-2 border-sienna/40 border-t-sienna animate-spin shrink-0" />
+                    <div>
+                      <p className="text-cream font-medium text-sm">Searching for nearby delivery partners...</p>
+                      <p className="text-muted-foreground text-xs mt-0.5">The admin will assign a driver shortly. This updates automatically.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="page-fade-up stagger-3 transition-all duration-300 hover:border-sienna/20">
+                <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
                 <CardContent>
                   <div className="mb-2"><strong>Order Number:</strong> {currentOrder.displayOrderId || currentOrder._id}</div>
                   <div className="mb-2"><strong>Status:</strong> {currentOrder.status}</div>

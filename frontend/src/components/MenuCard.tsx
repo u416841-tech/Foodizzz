@@ -1,7 +1,8 @@
 import { MenuItem } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Clock, Plus, Flame } from "lucide-react";
-import { useState } from "react";
+import { Clock, Plus } from "lucide-react";
+import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MenuCardProps {
   item: MenuItem;
@@ -11,11 +12,56 @@ interface MenuCardProps {
 export function MenuCard({ item, onAddToCart }: MenuCardProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [added, setAdded] = useState(false);
+
+  /* ── Spotlight state ─────────────────────────────────────── */
+  const [spotlight, setSpotlight] = useState({ x: -999, y: -999, active: false });
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setSpotlight({ x: e.clientX - rect.left, y: e.clientY - rect.top, active: true });
+  }
+
+  function handleMouseLeave() {
+    setSpotlight((s) => ({ ...s, active: false }));
+  }
+
+  function handleAddToCart() {
+    onAddToCart(item);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1600);
+  }
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-charcoal-mid border border-white/5 card-premium transition-all duration-400">
-      {/* Image */}
-      <div className="relative h-56 overflow-hidden bg-charcoal-light">
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="group relative overflow-hidden rounded-2xl bg-charcoal-mid border border-white/5 card-premium"
+      style={{ isolation: "isolate" }}
+      whileHover={{
+        scale: 1.02,
+        y: -4,
+        boxShadow: "0 16px 56px 0 rgba(0,0,0,0.55), 0 0 36px 0 rgba(196,98,58,0.22)",
+      }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {/* ── Spotlight radial gradient ─ sits at z-0, below all content ── */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 rounded-2xl z-0"
+        animate={{
+          background: spotlight.active
+            ? `radial-gradient(280px circle at ${spotlight.x}px ${spotlight.y}px, rgba(196,98,58,0.14) 0%, rgba(196,98,58,0.04) 40%, transparent 70%)`
+            : "radial-gradient(280px circle at -999px -999px, transparent 0%, transparent 100%)",
+          opacity: spotlight.active ? 1 : 0,
+        }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+      />
+
+      {/* ── Image ─────────────────────────────────────────────── */}
+      <div className="relative h-56 overflow-hidden bg-charcoal-light z-10">
         {imageLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-7 h-7 border-2 border-sienna border-t-transparent rounded-full animate-spin" />
@@ -67,8 +113,8 @@ export function MenuCard({ item, onAddToCart }: MenuCardProps) {
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-5">
+      {/* ── Content ───────────────────────────────────────────── */}
+      <div className="p-5 relative z-10">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3 className="font-serif font-semibold text-cream text-lg leading-tight line-clamp-1 group-hover:text-sienna-light transition-colors">
             {item.name}
@@ -78,15 +124,43 @@ export function MenuCard({ item, onAddToCart }: MenuCardProps) {
         <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-5">
           {item.description}
         </p>
-        <Button
-          className="w-full h-10 bg-sienna/15 hover:bg-sienna text-sienna hover:text-cream border border-sienna/30 hover:border-sienna rounded-xl text-sm font-medium transition-all duration-300 group/btn"
-          onClick={() => onAddToCart(item)}
-          disabled={!item.available}
-        >
-          <Plus className="w-4 h-4 mr-2 transition-transform group-hover/btn:rotate-90 duration-300" />
-          Add to Cart
-        </Button>
+
+        {/* ── Add to Cart — whileTap + AnimatePresence "Added!" feedback ── */}
+        <motion.div whileTap={{ scale: 0.95 }} style={{ position: "relative" }}>
+          <Button
+            className="w-full h-10 bg-sienna/15 hover:bg-sienna text-sienna hover:text-cream border border-sienna/30 hover:border-sienna rounded-xl text-sm font-medium transition-all duration-300 group/btn overflow-hidden relative"
+            onClick={handleAddToCart}
+            disabled={!item.available}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {added ? (
+                <motion.span
+                  key="added"
+                  className="absolute inset-0 flex items-center justify-center text-green-400 font-semibold"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  ✓ Added!
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="add"
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  <Plus className="w-4 h-4 mr-2 transition-transform group-hover/btn:rotate-90 duration-300" />
+                  Add to Cart
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

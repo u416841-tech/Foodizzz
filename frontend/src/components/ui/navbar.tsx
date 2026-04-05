@@ -1,4 +1,4 @@
-import { ShoppingCart, LogOut, User, Menu as MenuIcon, X } from "lucide-react";
+import { ShoppingCart, LogOut, User, Menu as MenuIcon, X, Shield } from "lucide-react";
 import { Button } from "./button";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -79,6 +79,14 @@ export function Navbar({ cartItemsCount = 0, isAdmin = false, onLogout }: Navbar
                     </span>
                   )}
                 </button>
+              </Link>
+              {/* Admin shortcut — subtle icon link */}
+              <Link
+                to="/admin/login"
+                title="Admin Panel"
+                className="p-2 text-muted-foreground hover:text-sienna transition-colors duration-200"
+              >
+                <Shield className="w-4 h-4" />
               </Link>
               <Link to="/menu">
                 <Button size="sm" className="hidden md:flex h-9 px-5 bg-sienna hover:bg-sienna-light text-cream rounded-full text-sm font-medium shadow-lg shadow-sienna/25 transition-all">

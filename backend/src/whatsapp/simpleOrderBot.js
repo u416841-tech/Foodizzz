@@ -180,31 +180,57 @@ class SimpleOrderBot {
     }
   }
 
-  // Send menu
+  // Send menu — split by category, max 4096 chars per message
   static async sendMenu(phoneNumber) {
     try {
-      const dishes = await Dish.find({ available: true }).sort({ name: 1 });
-      
+      const dishes = await Dish.find({ available: true }).sort({ category: 1, name: 1 });
+
       if (dishes.length === 0) {
         return await WhatsAppService.sendMessage(phoneNumber, '❌ No dishes available right now.');
       }
 
-      let message = `🍽️ *OrderEase Menu*\n\n`;
-      dishes.forEach((dish, index) => {
-        message += `${index + 1}. *${dish.name}* - ₹${dish.price}\n`;
-        if (dish.description) {
-          message += `   _${dish.description}_\n`;
-        }
-        message += `\n`;
+      // Group by category
+      const byCategory = {};
+      dishes.forEach(dish => {
+        const cat = dish.category || 'Other';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(dish);
       });
 
-      message += `📝 *How to order:*\n`;
-      message += `• "2 pizza"\n`;
-      message += `• "1 margherita pizza"\n`;
-      message += `• "burger and coke"\n\n`;
-      message += `Just tell me what you want! 😊`;
+      // Build messages, each ≤ 4000 chars (safe buffer below 4096)
+      const MAX = 4000;
+      const messages = [];
+      let current = `🍽️ *Foodizzz Menu*\n\n`;
 
-      await WhatsAppService.sendMessage(phoneNumber, message);
+      for (const [category, items] of Object.entries(byCategory)) {
+        let block = `*${category}*\n`;
+        items.forEach((dish, i) => {
+          block += `${i + 1}. ${dish.name} — ₹${dish.price}\n`;
+        });
+        block += '\n';
+
+        // If adding this block would exceed limit, flush and start new message
+        if (current.length + block.length > MAX) {
+          messages.push(current.trim());
+          current = block;
+        } else {
+          current += block;
+        }
+      }
+
+      // Add ordering instructions to last chunk
+      current += `📝 *How to order:*\n`;
+      current += `• "2 butter chicken"\n`;
+      current += `• "1 biryani"\n`;
+      current += `• "paneer tikka"\n\n`;
+      current += `Just tell me what you want! 😊`;
+
+      messages.push(current.trim());
+
+      // Send all chunks sequentially
+      for (const msg of messages) {
+        await WhatsAppService.sendMessage(phoneNumber, msg);
+      }
 
     } catch (error) {
       console.error('Error sending menu:', error);

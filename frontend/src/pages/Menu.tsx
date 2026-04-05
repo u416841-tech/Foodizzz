@@ -1,16 +1,115 @@
 import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/ui/navbar";
 import { MenuCard } from "@/components/MenuCard";
-import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/types";
-import { Search, MapPin, Navigation, X } from "lucide-react";
+import { Search, MapPin, Navigation, X, Utensils } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/CartContext";
+import { motion, AnimatePresence } from "framer-motion";
 
-/* ─── Location Hero ──────────────────────────────────────── */
-function LocationHero({ onConfirm }: { onConfirm: (address: string) => void }) {
+/* ─── Hard-coded fallback dishes shown while backend loads ── */
+const FALLBACK_DISHES = [
+  { label: "Butter Chicken",  emoji: "🍗", price: 280, cat: "North Indian" },
+  { label: "Hyderabadi Biryani", emoji: "🍚", price: 320, cat: "Biryani" },
+  { label: "Paneer Tikka",    emoji: "🧀", price: 240, cat: "Starters" },
+  { label: "Masala Dosa",     emoji: "🫓", price: 120, cat: "South Indian" },
+  { label: "Dal Makhani",     emoji: "🫘", price: 180, cat: "North Indian" },
+  { label: "Tandoori Roti",   emoji: "🫓", price: 40,  cat: "Breads" },
+  { label: "Chole Bhature",   emoji: "🍽️", price: 160, cat: "Street Food" },
+  { label: "Gulab Jamun",     emoji: "🍮", price: 80,  cat: "Desserts" },
+];
+
+/* ─── Skeleton card ──────────────────────────────────────── */
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl bg-white/4 border border-white/5 overflow-hidden animate-pulse">
+      <div className="h-48 bg-white/6" />
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-white/6 rounded-full w-3/4" />
+        <div className="h-3 bg-white/6 rounded-full w-full" />
+        <div className="h-3 bg-white/6 rounded-full w-2/3" />
+        <div className="h-9 bg-white/6 rounded-xl mt-2" />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Fallback bento card (shown when backend is offline) ── */
+function FallbackCard({ dish }: { dish: typeof FALLBACK_DISHES[0] }) {
+  return (
+    <div className="rounded-2xl border border-white/8 overflow-hidden group hover:border-sienna/40 transition-all duration-300 hover:-translate-y-1"
+      style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)" }}>
+      {/* Emoji placeholder image area */}
+      <div className="h-48 flex items-center justify-center relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(18 72% 52% / 0.12), hsl(220 13% 15% / 0.8))" }}>
+        <span className="text-7xl group-hover:scale-110 transition-transform duration-500">{dish.emoji}</span>
+        <div className="absolute top-3 left-3">
+          <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-sienna/20 text-sienna border border-sienna/25">
+            {dish.cat}
+          </span>
+        </div>
+      </div>
+      <div className="p-4">
+        <h3 className="font-semibold text-cream text-base mb-1">{dish.label}</h3>
+        <p className="text-muted-foreground text-xs mb-3">Authentic recipe, freshly prepared</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sienna font-bold text-lg">₹{dish.price}</span>
+          <button className="px-4 py-1.5 rounded-xl bg-sienna/15 border border-sienna/30 text-sienna text-xs font-medium hover:bg-sienna hover:text-cream transition-all duration-200">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Menu Page ─────────────────────────────────────── */
+export default function Menu() {
+  const { toast } = useToast();
+  const { addToCart, cartItems } = useCart();
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  // Location state
   const [address, setAddress] = useState("");
   const [locating, setLocating] = useState(false);
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
+
+  // Menu state
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [backendDown, setBackendDown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // Restore saved address
+  useEffect(() => {
+    const saved = sessionStorage.getItem("deliveryAddress");
+    if (saved) { setAddress(saved); setAddressConfirmed(true); }
+  }, []);
+
+  // Fetch dishes — always runs, never blocks the UI
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${BACKEND_URL}/api/dishes`)
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((data) => {
+        setMenuItems(data.map((d: any) => ({
+          id: d._id || d.id,
+          name: d.name,
+          description: d.description || "",
+          price: d.price,
+          image: d.imageUrl
+            ? d.imageUrl.startsWith("http") ? d.imageUrl : `${BACKEND_URL}${d.imageUrl}`
+            : "",
+          available: d.available,
+          preparationTime: d.preparationTime || 15,
+          category: d.category || "Specials",
+        })));
+        setBackendDown(false);
+        setLoading(false);
+      })
+      .catch(() => { setBackendDown(true); setLoading(false); });
+  }, [BACKEND_URL]);
 
   const handleGPS = () => {
     if (!navigator.geolocation) return;
@@ -22,8 +121,7 @@ function LocationHero({ onConfirm }: { onConfirm: (address: string) => void }) {
             `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
           );
           const data = await res.json();
-          const label =
-            data.display_name?.split(",").slice(0, 3).join(", ") ||
+          const label = data.display_name?.split(",").slice(0, 3).join(", ") ||
             `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
           setAddress(label);
         } catch {
@@ -35,188 +133,16 @@ function LocationHero({ onConfirm }: { onConfirm: (address: string) => void }) {
     );
   };
 
-  const handleConfirm = () => {
-    if (address.trim()) onConfirm(address.trim());
+  const handleConfirmAddress = () => {
+    if (!address.trim()) return;
+    sessionStorage.setItem("deliveryAddress", address.trim());
+    setAddressConfirmed(true);
   };
 
-  // Food images for the collage
-  const foodImages = [
-    { src: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=600&q=80&fit=crop", label: "Butter Chicken" },
-    { src: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=600&q=80&fit=crop", label: "Biryani" },
-    { src: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&q=80&fit=crop", label: "Paneer Tikka" },
-    { src: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=600&q=80&fit=crop", label: "Masala Dosa" },
-    { src: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&q=80&fit=crop", label: "Dal Makhani" },
-    { src: "https://images.unsplash.com/photo-1574653853027-5382a3d23a15?w=600&q=80&fit=crop", label: "Tandoori" },
-  ];
-
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background image collage — 3-col mosaic */}
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-0.5">
-        {foodImages.map((img, i) => (
-          <div key={i} className="relative overflow-hidden">
-            <img
-              src={img.src}
-              alt={img.label}
-              className="w-full h-full object-cover scale-110"
-              style={{ filter: "brightness(0.45) saturate(1.2)" }}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Unified dark overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
-      {/* Sienna ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-sienna/20 rounded-full blur-[140px] pointer-events-none" />
-
-      {/* Two-column layout */}
-      <div className="relative z-10 container py-24 grid lg:grid-cols-2 gap-12 items-center">
-
-        {/* Left — text + location module */}
-        <div className="w-full max-w-xl">
-          <div className="inline-flex items-center gap-2 mb-6 animate-fade-up">
-            <span className="w-8 h-px bg-sienna" />
-            <span className="text-sienna text-sm font-medium tracking-[0.2em] uppercase">Foodizzz</span>
-            <span className="w-8 h-px bg-sienna" />
-          </div>
-
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-cream leading-tight mb-4 animate-fade-up-delay-1">
-            Explore Our Full Menu:<br />
-            <span className="italic text-gradient">Taste the Best</span><br />
-            of Foodizzz
-          </h1>
-
-          <p className="text-cream/70 text-base mb-8 animate-fade-up-delay-2">
-            Authentic Indian flavours, crafted fresh — delivered to your door.
-          </p>
-
-          {/* Glassmorphism location module */}
-          <div className="glass-strong rounded-3xl p-6 animate-fade-up-delay-3 shadow-2xl shadow-black/40">
-            <p className="text-cream/80 text-sm font-medium mb-4 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-sienna" />
-              Set your delivery location to start ordering
-            </p>
-
-            <div className="relative mb-4">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40" />
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-                placeholder="Enter your delivery address..."
-                className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white/8 border border-white/15 text-cream placeholder:text-cream/35 focus:outline-none focus:border-sienna/60 focus:bg-white/12 transition-all duration-300 text-sm"
-              />
-              {address && (
-                <button onClick={() => setAddress("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-cream/40 hover:text-cream transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-cream/40 text-xs font-semibold tracking-widest uppercase">or</span>
-              <div className="flex-1 h-px bg-white/10" />
-            </div>
-
-            <button
-              onClick={handleGPS}
-              disabled={locating}
-              className="w-full flex items-center justify-center gap-3 h-11 rounded-2xl border border-sienna/40 text-sienna hover:bg-sienna/10 hover:border-sienna/70 transition-all duration-300 text-sm font-medium mb-4 disabled:opacity-60"
-            >
-              {locating ? (
-                <><div className="w-4 h-4 border-2 border-sienna border-t-transparent rounded-full animate-spin" />Detecting location...</>
-              ) : (
-                <><Navigation className="w-4 h-4" />Use Current Location</>
-              )}
-            </button>
-
-            <button
-              onClick={handleConfirm}
-              disabled={!address.trim()}
-              className="w-full h-12 rounded-2xl bg-sienna hover:bg-sienna-light disabled:opacity-40 disabled:cursor-not-allowed text-cream font-semibold text-base transition-all duration-300 shadow-lg shadow-sienna/30 hover:shadow-sienna/50 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Browse Menu →
-            </button>
-          </div>
-        </div>
-
-        {/* Right — featured dish cards */}
-        <div className="hidden lg:grid grid-cols-2 gap-3 animate-fade-up-delay-2">
-          {foodImages.slice(0, 4).map((img, i) => (
-            <div
-              key={i}
-              className="relative rounded-2xl overflow-hidden group cursor-pointer"
-              style={{ height: i % 2 === 0 ? "200px" : "160px", marginTop: i % 2 !== 0 ? "40px" : "0" }}
-            >
-              <img
-                src={img.src}
-                alt={img.label}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3">
-                <span className="text-cream font-semibold text-sm drop-shadow">{img.label}</span>
-              </div>
-              {/* Sienna accent border on hover */}
-              <div className="absolute inset-0 rounded-2xl border-2 border-sienna/0 group-hover:border-sienna/50 transition-all duration-300" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Liquid bottom wave */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-12">
-          <path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60 Z" fill="hsl(220 13% 9%)" />
-        </svg>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Menu Grid ──────────────────────────────────────────── */
-function MenuGrid({
-  address,
-  onReset,
-}: {
-  address: string;
-  onReset: () => void;
-}) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-  const { addToCart, cartItems } = useCart();
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`${BACKEND_URL}/api/dishes`)
-      .then((r) => { if (!r.ok) throw new Error("Failed to fetch"); return r.json(); })
-      .then((data) => {
-        setMenuItems(
-          data.map((d: any) => ({
-            id: d._id || d.id,
-            name: d.name,
-            description: d.description || "",
-            price: d.price,
-            image: d.imageUrl
-              ? d.imageUrl.startsWith("http") ? d.imageUrl : `${BACKEND_URL}${d.imageUrl}`
-              : "",
-            available: d.available,
-            preparationTime: d.preparationTime || 15,
-            category: d.category || "Specials",
-          }))
-        );
-        setLoading(false);
-      })
-      .catch((e) => { setError(e.message); setLoading(false); });
-  }, [BACKEND_URL]);
+  const handleResetAddress = () => {
+    sessionStorage.removeItem("deliveryAddress");
+    setAddressConfirmed(false);
+  };
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(menuItems.map((i) => i.category).filter(Boolean)));
@@ -224,8 +150,7 @@ function MenuGrid({
   }, [menuItems]);
 
   const filtered = menuItems.filter((item) => {
-    const matchSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     const matchCat = selectedCategory === "All" || item.category === selectedCategory;
     return matchSearch && matchCat;
@@ -233,176 +158,298 @@ function MenuGrid({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky sub-header */}
-      <div className="sticky top-[72px] z-40 bg-background/90 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20">
-        <div className="container px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Location pill */}
-          <button
-            onClick={onReset}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-sienna/10 border border-sienna/25 text-sienna text-sm font-medium hover:bg-sienna/20 transition-colors shrink-0"
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="max-w-[180px] truncate">{address}</span>
-            <X className="w-3 h-3 opacity-60" />
-          </button>
+      <Navbar cartItemsCount={cartItems.length} />
 
-          {/* Search */}
-          <div className="relative flex-1 w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      {/* ── HERO — always visible, never blank ─────────────── */}
+      <section className="relative pt-24 pb-0 overflow-hidden">
+        {/* Static gradient background — never fails */}
+        <div className="absolute inset-0 z-0"
+          style={{ background: "linear-gradient(135deg, hsl(220 13% 7%) 0%, hsl(220 13% 11%) 50%, hsl(18 72% 52% / 0.08) 100%)" }} />
+        {/* Ambient orbs */}
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-sienna/8 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-sienna/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 container px-4 py-12 grid lg:grid-cols-2 gap-10 items-start">
+
+          {/* Left — heading + location card */}
+          <div>
+            <div className="inline-flex items-center gap-2 mb-5">
+              <span className="w-8 h-px bg-sienna" />
+              <span className="text-sienna text-xs font-medium tracking-[0.2em] uppercase">Foodizzz Menu</span>
+              <span className="w-8 h-px bg-sienna" />
+            </div>
+            <h1 className="font-serif text-4xl md:text-5xl font-bold text-cream leading-tight mb-3">
+              Explore Our Full Menu:<br />
+              <span className="italic text-gradient">Taste the Best</span> of Foodizzz
+            </h1>
+            <p className="text-muted-foreground text-base mb-8">
+              Authentic Indian flavours, crafted fresh — delivered to your door.
+            </p>
+
+            {/* ── Location card — AnimatePresence transitions between states ── */}
+            <div className="glass-strong rounded-3xl p-6 shadow-2xl shadow-black/50 border border-white/8 overflow-hidden">
+              <AnimatePresence mode="wait" initial={false}>
+                {addressConfirmed ? (
+                  /* Confirmed state */
+                  <motion.div
+                    key="confirmed"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-sienna/20 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-sienna" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">Delivering to</p>
+                        <p className="text-cream text-sm font-medium truncate">{address}</p>
+                      </div>
+                    </div>
+                    <button onClick={handleResetAddress}
+                      className="shrink-0 px-3 py-1.5 rounded-xl border border-white/10 text-muted-foreground hover:text-cream hover:border-white/20 text-xs transition-colors">
+                      Change
+                    </button>
+                  </motion.div>
+                ) : (
+                  /* Input state */
+                  <motion.div
+                    key="input"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <p className="text-cream/80 text-sm font-medium mb-4 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-sienna" />
+                      Set your delivery location
+                    </p>
+                    <div className="relative mb-3">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/30" />
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleConfirmAddress()}
+                        placeholder="Enter your delivery address..."
+                        className="w-full h-12 pl-11 pr-10 rounded-2xl bg-charcoal-mid border border-white/15 text-white caret-white placeholder:text-white/35 focus:outline-none focus:border-sienna/60 transition-all text-sm"
+                      />
+                      <AnimatePresence>
+                        {address && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.7 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.7 }}
+                            transition={{ duration: 0.18 }}
+                            onClick={() => setAddress("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-cream/30 hover:text-cream transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex-1 h-px bg-white/8" />
+                      <span className="text-cream/30 text-xs tracking-widest uppercase">or</span>
+                      <div className="flex-1 h-px bg-white/8" />
+                    </div>
+                    <button onClick={handleGPS} disabled={locating}
+                      className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl border border-sienna/35 text-sienna hover:bg-sienna/10 hover:border-sienna/60 transition-all text-sm font-medium mb-3 disabled:opacity-50">
+                      {locating
+                        ? <><div className="w-4 h-4 border-2 border-sienna border-t-transparent rounded-full animate-spin" />Detecting...</>
+                        : <><Navigation className="w-4 h-4" />Use Current Location</>}
+                    </button>
+                    <motion.button
+                      onClick={handleConfirmAddress}
+                      disabled={!address.trim()}
+                      whileTap={{ scale: 0.97 }}
+                      className="w-full h-12 rounded-2xl bg-sienna hover:bg-sienna-light disabled:opacity-35 disabled:cursor-not-allowed text-cream font-semibold text-sm transition-all shadow-lg shadow-sienna/25"
+                    >
+                      Confirm Location →
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Right — live stats + category quick-links */}
+          <div className="hidden lg:flex flex-col gap-4">
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: loading ? "—" : `${menuItems.length}+`, label: "Dishes" },
+                { value: "4.9★", label: "Rating" },
+                { value: "20 min", label: "Avg. Ready" },
+              ].map((s) => (
+                <div key={s.label} className="glass rounded-2xl p-4 text-center border border-white/6">
+                  <div className="font-serif text-2xl font-bold text-sienna">{s.value}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Category quick-links — always visible */}
+            <div className="glass rounded-2xl p-5 border border-white/6">
+              <p className="text-xs text-muted-foreground font-medium tracking-widest uppercase mb-3 flex items-center gap-2">
+                <Utensils className="w-3.5 h-3.5 text-sienna" /> Categories
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(loading || backendDown
+                  ? ["North Indian", "Biryani", "South Indian", "Street Food", "Starters", "Breads", "Desserts"]
+                  : categories.filter(c => c !== "All").slice(0, 10)
+                ).map((cat) => (
+                  <button key={cat}
+                    onClick={() => { setSelectedCategory(cat); document.getElementById("menu-grid")?.scrollIntoView({ behavior: "smooth" }); }}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border border-white/10 text-muted-foreground hover:border-sienna/40 hover:text-sienna hover:bg-sienna/8 transition-all duration-200">
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search box */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                placeholder="Search dishes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-4 h-11 rounded-2xl bg-gray-800 border border-white/15 text-gray-100 text-sm placeholder:text-gray-500 focus:outline-none focus:border-sienna/60 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Wave divider */}
+        <div className="relative z-10">
+          <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-10">
+            <path d="M0,24 C360,48 1080,0 1440,24 L1440,48 L0,48 Z" fill="hsl(220 13% 9%)" />
+          </svg>
+        </div>
+      </section>
+
+      {/* ── MENU GRID — always rendered, never hidden ───────── */}
+      <section id="menu-grid" className="bg-background">
+        {/* Mobile search + filters */}
+        <div className="lg:hidden sticky top-[72px] z-40 bg-background/95 backdrop-blur-xl border-b border-white/5 px-4 py-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               placeholder="Search dishes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 h-9 rounded-full bg-charcoal-mid border border-white/8 text-cream text-sm placeholder:text-muted-foreground focus:outline-none focus:border-sienna/40 transition-colors"
+              className="w-full pl-9 pr-4 h-9 rounded-full bg-gray-800 border border-white/15 text-gray-100 text-sm placeholder:text-gray-500 focus:outline-none focus:border-sienna/60 transition-colors"
             />
           </div>
+          {addressConfirmed && (
+            <button onClick={handleResetAddress}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-sienna/10 border border-sienna/25 text-sienna text-xs font-medium">
+              <MapPin className="w-3 h-3" />
+              <span className="max-w-[200px] truncate">{address}</span>
+              <X className="w-3 h-3 opacity-60" />
+            </button>
+          )}
         </div>
 
         {/* Category pills */}
-        {categories.length > 1 && (
-          <div className="container px-4 pb-3 overflow-x-auto">
-            <div className="flex gap-2 min-w-max">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border whitespace-nowrap ${
-                    selectedCategory === cat
-                      ? "bg-sienna text-cream border-sienna shadow-md shadow-sienna/20"
-                      : "bg-transparent text-muted-foreground border-white/10 hover:border-sienna/30 hover:text-cream"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+        {!loading && !backendDown && categories.length > 1 && (
+          <div className="sticky top-[72px] lg:top-[72px] z-30 bg-background/95 backdrop-blur-xl border-b border-white/5">
+            <div className="container px-4 py-2.5 overflow-x-auto">
+              <div className="flex gap-2 min-w-max">
+                {categories.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border whitespace-nowrap ${
+                      selectedCategory === cat
+                        ? "bg-sienna text-cream border-sienna shadow-md shadow-sienna/20"
+                        : "bg-transparent text-muted-foreground border-white/10 hover:border-sienna/30 hover:text-cream"
+                    }`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Grid */}
-      <div className="container px-4 py-10">
-        {/* Section label */}
-        <div className="mb-8 animate-fade-up">
-          <span className="text-sienna text-xs font-medium tracking-[0.2em] uppercase">
-            {selectedCategory === "All" ? "All Dishes" : selectedCategory}
-          </span>
-          <h2 className="font-serif text-3xl font-bold text-cream mt-1">
-            {loading ? "Loading..." : `${filtered.length} dish${filtered.length !== 1 ? "es" : ""} available`}
-          </h2>
-        </div>
+        <div className="container px-4 py-10">
+          <div className="mb-8">
+            <span className="text-sienna text-xs font-medium tracking-[0.2em] uppercase">
+              {backendDown ? "Featured Dishes" : selectedCategory === "All" ? "All Dishes" : selectedCategory}
+            </span>
+            <h2 className="font-serif text-3xl font-bold text-cream mt-1">
+              {loading ? "Loading menu..." : backendDown ? "Our Specialities" : `${filtered.length} dish${filtered.length !== 1 ? "es" : ""} available`}
+            </h2>
+          </div>
 
-        {loading ? (
-          /* Skeleton grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {Array(8).fill(0).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-charcoal-mid border border-white/5 overflow-hidden animate-pulse">
-                <div className="h-52 bg-charcoal-light" />
-                <div className="p-5 space-y-3">
-                  <div className="h-4 bg-charcoal-light rounded-full w-3/4" />
-                  <div className="h-3 bg-charcoal-light rounded-full w-full" />
-                  <div className="h-3 bg-charcoal-light rounded-full w-2/3" />
-                  <div className="h-9 bg-charcoal-light rounded-xl mt-4" />
-                </div>
+          {/* Skeleton — while loading */}
+          {loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {Array(8).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          )}
+
+          {/* Fallback bento grid — when backend is down */}
+          {!loading && backendDown && (
+            <>
+              <div className="mb-6 px-4 py-3 rounded-2xl bg-sienna/8 border border-sienna/20 text-sienna text-sm flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-sienna animate-pulse" />
+                Backend is starting up — showing sample menu. Refresh in a moment.
               </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-destructive text-lg">{error}</p>
-          </div>
-        ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((item, i) => (
-              <div
-                key={item.id || (item as any)._id}
-                className="animate-fade-up"
-                style={{ animationDelay: `${Math.min(i * 0.04, 0.4)}s`, opacity: 0 }}
-              >
-                <MenuCard
-                  item={item}
-                  onAddToCart={(item) => {
-                    addToCart(item);
-                    toast({ title: "Added to cart", description: `${item.name} added.` });
-                  }}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {FALLBACK_DISHES.map((dish) => <FallbackCard key={dish.label} dish={dish} />)}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg mb-4">No dishes found.</p>
-            <button
-              onClick={() => { setSearchTerm(""); setSelectedCategory("All"); }}
-              className="px-6 py-2 rounded-full border border-sienna/30 text-sienna text-sm hover:bg-sienna/10 transition-colors"
+            </>
+          )}
+
+          {/* Real menu grid — AnimatePresence for staggered item entry */}
+          {!loading && !backendDown && filtered.length > 0 && (
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+              initial="hidden"
+              animate="visible"
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.055 } } }}
             >
-              Clear filters
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+              <AnimatePresence>
+                {filtered.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    variants={{
+                      hidden: { opacity: 0, y: 24 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                    exit={{ opacity: 0, y: -10, scale: 0.97 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <MenuCard
+                      item={item}
+                      onAddToCart={(item) => {
+                        addToCart(item);
+                        toast({ title: "Added to cart", description: `${item.name} added.` });
+                      }}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
 
-/* ─── Page ───────────────────────────────────────────────── */
-export default function Menu() {
-  const { cartItems } = useCart();
-  const [address, setAddress] = useState<string | null>(null);
-  const [dissolving, setDissolving] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-
-  // Persist address in sessionStorage so refresh keeps state
-  useEffect(() => {
-    const saved = sessionStorage.getItem("deliveryAddress");
-    if (saved) { setAddress(saved); setShowGrid(true); }
-  }, []);
-
-  const handleConfirm = (addr: string) => {
-    setDissolving(true);
-    sessionStorage.setItem("deliveryAddress", addr);
-    setTimeout(() => {
-      setAddress(addr);
-      setShowGrid(true);
-      setDissolving(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 600);
-  };
-
-  const handleReset = () => {
-    sessionStorage.removeItem("deliveryAddress");
-    setShowGrid(false);
-    setAddress(null);
-  };
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar cartItemsCount={cartItems.length} />
-
-      {/* Hero — dissolves out */}
-      <div
-        className="transition-all duration-600 ease-in-out"
-        style={{
-          opacity: dissolving ? 0 : showGrid ? 0 : 1,
-          transform: dissolving || showGrid ? "scale(1.02)" : "scale(1)",
-          pointerEvents: showGrid ? "none" : "auto",
-          position: showGrid ? "absolute" : "relative",
-          width: "100%",
-          transitionDuration: "600ms",
-        }}
-      >
-        <LocationHero onConfirm={handleConfirm} />
-      </div>
-
-      {/* Menu grid — fades in */}
-      {showGrid && address && (
-        <div
-          className="animate-fade-in"
-          style={{ paddingTop: "72px" }}
-        >
-          <MenuGrid address={address} onReset={handleReset} />
+          {/* Empty state */}
+          {!loading && !backendDown && filtered.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground text-lg mb-4">No dishes match your search.</p>
+              <button onClick={() => { setSearchTerm(""); setSelectedCategory("All"); }}
+                className="px-6 py-2 rounded-full border border-sienna/30 text-sienna text-sm hover:bg-sienna/10 transition-colors">
+                Clear filters
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </section>
     </div>
   );
 }

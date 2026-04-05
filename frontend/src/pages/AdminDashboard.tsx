@@ -8,8 +8,8 @@ import { OrderFilters } from "@/components/OrderFilters";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Order, OrderStatus } from "@/types";
-import { TrendingUp, DollarSign, Clock, Users, ShoppingBag, Timer, X, Edit, Trash, ImagePlus, Check, Save, Calendar, Filter, BarChart3, PieChart as PieChartIcon, Send, MessageSquare, Megaphone, UserCheck } from "lucide-react";
+import { Order, OrderStatus, DeliveryPartner } from "@/types";
+import { TrendingUp, DollarSign, Clock, Users, ShoppingBag, Timer, X, Edit, Trash, ImagePlus, Check, Save, Calendar, Filter, BarChart3, PieChart as PieChartIcon, Send, MessageSquare, Megaphone, UserCheck, Bike, Phone, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +53,24 @@ export default function AdminDashboard() {
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [dishForm, setDishForm] = useState<{ name: string; price: string; image: File | null; available: boolean; description: string }>({ name: "", price: "", image: null, available: true, description: "" });
   const [dishError, setDishError] = useState("");
+
+  // ── Delivery partner state — real API-backed ──────────────
+  const [partners, setPartners] = useState<DeliveryPartner[]>([]);
+  const [partnerForm, setPartnerForm] = useState({ name: '', phone: '' });
+  const [partnerLoading, setPartnerLoading] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<DeliveryPartner | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '' });
+  const [selectedPartnerId, setSelectedPartnerId] = useState<Record<string, string>>({});
+
+  // ── Store Settings — persisted in localStorage ────────────
+  const [taxRate, setTaxRate] = useState<number>(() => {
+    const saved = localStorage.getItem("adminTaxRate");
+    return saved ? parseFloat(saved) : 5;
+  });
+  const [taxInput, setTaxInput] = useState<string>(() => {
+    const saved = localStorage.getItem("adminTaxRate");
+    return saved || "5";
+  });
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -333,6 +351,124 @@ export default function AdminDashboard() {
       fetchBroadcastHistory();
     }
   }, [isAuthenticated]);
+
+  // ── Delivery partner CRUD — real API calls ─────────────────
+
+  // READ — fetch all partners from backend
+  const fetchPartners = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/delivery-partners`);
+      const data = await res.json();
+      if (res.ok) setPartners(data);
+    } catch { /* silent — UI shows empty list */ }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'delivery') fetchPartners();
+  }, [activeTab]);
+
+  // CREATE
+  const handleAddPartner = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!partnerForm.name.trim() || !partnerForm.phone.trim()) return;
+    setPartnerLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/delivery-partners`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: partnerForm.name.trim(), phone: partnerForm.phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+      setPartnerForm({ name: '', phone: '' });
+      await fetchPartners();
+      toast({ title: 'Partner added' });
+    } catch (err: any) {
+      toast({ title: 'Failed to add partner', description: err.message, variant: 'destructive' });
+    } finally {
+      setPartnerLoading(false);
+    }
+  };
+
+  // UPDATE — open edit modal
+  const startEditPartner = (p: DeliveryPartner) => {
+    setEditingPartner(p);
+    setEditForm({ name: p.name, phone: p.phone });
+  };
+
+  const handleUpdatePartner = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingPartner) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/delivery-partners/${editingPartner._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editForm.name.trim(), phone: editForm.phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+      setEditingPartner(null);
+      await fetchPartners();
+      toast({ title: 'Partner updated' });
+    } catch (err: any) {
+      toast({ title: 'Failed to update', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  // DELETE
+  const handleDeletePartner = async (id: string) => {
+    if (!window.confirm('Delete this delivery partner?')) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/delivery-partners/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      await fetchPartners();
+      toast({ title: 'Partner deleted' });
+    } catch (err: any) {
+      toast({ title: 'Failed to delete', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  // ASSIGN partner to order — also writes to localStorage for instant TrackOrder sync
+  const DISPATCH_KEY = "foodizzz_dispatch";
+
+  const handleAssignPartner = async (orderId: string) => {
+    const partnerId = selectedPartnerId[orderId];
+    if (!partnerId) return;
+    const partner = partners.find(p => p._id === partnerId);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/orders/${orderId}/assign-partner`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Error ${res.status}`);
+
+      // Write to localStorage so TrackOrder picks it up within 2 seconds
+      try {
+        const raw = localStorage.getItem(DISPATCH_KEY);
+        const map = raw ? JSON.parse(raw) : {};
+        // Find the displayOrderId for this _id
+        const order = orders.find(o => o._id === orderId || o.id === orderId);
+        const displayId = order?.id || orderId;
+        map[displayId] = {
+          partner: { name: partner?.name || '', phone: partner?.phone || '' },
+          status: 'out_for_delivery',
+          assignedAt: new Date().toISOString(),
+        };
+        // Also store by _id as fallback
+        map[orderId] = map[displayId];
+        localStorage.setItem(DISPATCH_KEY, JSON.stringify(map));
+      } catch { /* localStorage unavailable */ }
+
+      setSelectedPartnerId(prev => ({ ...prev, [orderId]: '' }));
+      fetchOrders();
+      await fetchPartners();
+      toast({ title: 'Partner assigned', description: `${partner?.name} is now out for delivery.` });
+    } catch (err: any) {
+      toast({ title: 'Assignment failed', description: err.message, variant: 'destructive' });
+    }
+  };
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
@@ -684,7 +820,7 @@ export default function AdminDashboard() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
             <TabsTrigger 
               value="orders" 
               className="text-xs sm:text-sm px-1 sm:px-4 py-2 sm:py-3 h-auto min-h-[3rem] sm:min-h-[2.5rem] flex items-center justify-center"
@@ -714,6 +850,12 @@ export default function AdminDashboard() {
               className="text-xs sm:text-sm px-1 sm:px-4 py-2 sm:py-3 h-auto min-h-[3rem] sm:min-h-[2.5rem] flex items-center justify-center"
             >
               <div className="mobile-tab-text">Broadcast</div>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="delivery" 
+              className="text-xs sm:text-sm px-1 sm:px-4 py-2 sm:py-3 h-auto min-h-[3rem] sm:min-h-[2.5rem] flex items-center justify-center"
+            >
+              <div className="mobile-tab-text">Delivery</div>
             </TabsTrigger>
           </TabsList>
 
@@ -1482,6 +1624,274 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ── DELIVERY PARTNER TAB ─────────────────────────── */}
+          <TabsContent value="delivery" className="space-y-6">
+
+            {/* ── Store Settings ── */}
+            <Card className="border-sienna/20" style={{ background: "linear-gradient(135deg, hsl(220 13% 13%), hsl(220 13% 11%))" }}>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-sienna" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                  </svg>
+                  <CardTitle className="text-cream">Store Settings</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row items-end gap-3 max-w-sm">
+                  <div className="flex-1">
+                    <Label htmlFor="tax-rate" className="text-sm text-muted-foreground mb-1.5 block">
+                      Tax Rate (%) — applied to all customer carts
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="tax-rate"
+                        type="number"
+                        min="0"
+                        max="50"
+                        step="0.5"
+                        value={taxInput}
+                        onChange={e => setTaxInput(e.target.value)}
+                        className="pr-8 bg-background/50 border-white/10 focus:border-sienna/50"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="bg-sienna hover:bg-sienna-light text-cream rounded-full px-6 shadow-lg shadow-sienna/25 shrink-0"
+                    onClick={() => {
+                      const val = parseFloat(taxInput);
+                      if (isNaN(val) || val < 0 || val > 50) {
+                        toast({ title: "Invalid rate", description: "Enter a value between 0 and 50.", variant: "destructive" });
+                        return;
+                      }
+                      // ← Write to localStorage — Cart reads this on mount and via storage event
+                      localStorage.setItem("adminTaxRate", String(val));
+                      setTaxRate(val);
+                      toast({ title: `Tax rate saved: ${val}%`, description: "Customer carts will reflect this immediately." });
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Current rate: <span className="text-sienna font-semibold">{taxRate}%</span>
+                  {taxRate === 0 && <span className="ml-2 text-success">· Tax-free mode active</span>}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ── CREATE: Add Partner Form ── */}
+            <Card className="border-border">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Bike className="w-5 h-5 text-primary" />
+                  <CardTitle>Add Delivery Partner</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddPartner} className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <Label htmlFor="p-name">Name</Label>
+                    <Input
+                      id="p-name"
+                      placeholder="Partner name"
+                      value={partnerForm.name}
+                      onChange={e => setPartnerForm(f => ({ ...f, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="p-phone">Phone</Label>
+                    <Input
+                      id="p-phone"
+                      placeholder="+91 XXXXXXXXXX"
+                      value={partnerForm.phone}
+                      onChange={e => setPartnerForm(f => ({ ...f, phone: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="submit"
+                      disabled={partnerLoading}
+                      className="w-full sm:w-auto bg-sienna hover:bg-sienna-light text-cream rounded-full shadow-lg shadow-sienna/25"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {partnerLoading ? 'Adding...' : 'Add Partner'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* ── UPDATE: Inline Edit Form (shown when editing) ── */}
+            {editingPartner && (
+              <Card className="border-sienna/40 bg-sienna/5">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Edit className="w-5 h-5 text-sienna" />
+                      <CardTitle className="text-sienna">Edit Partner</CardTitle>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingPartner(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUpdatePartner} className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <Label>Name</Label>
+                      <Input
+                        value={editForm.name}
+                        onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label>Phone</Label>
+                      <Input
+                        value={editForm.phone}
+                        onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <Button type="submit" className="bg-sienna hover:bg-sienna-light text-cream rounded-full">
+                        <Save className="w-4 h-4 mr-1" /> Save
+                      </Button>
+                      <Button type="button" variant="outline" className="rounded-full" onClick={() => setEditingPartner(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── READ: Partner List ── */}
+            <Card className="border-border">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Delivery Partners ({partners.length})</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={fetchPartners} className="text-xs text-muted-foreground">
+                    ↻ Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {partners.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-6">No partners yet. Add one above.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {partners.map(p => (
+                      <div key={p._id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-sienna/15 flex items-center justify-center text-sienna font-bold text-sm">
+                            {p.name[0]}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">{p.phone}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={
+                            p.status === 'available'
+                              ? 'bg-success/20 text-success border-success/30'
+                              : 'bg-warning/20 text-warning border-warning/30'
+                          }>
+                            {p.status === 'available' ? 'Available' : 'Busy'}
+                          </Badge>
+                          {/* UPDATE button */}
+                          <Button size="sm" variant="ghost" onClick={() => startEditPartner(p)}>
+                            <Edit className="w-4 h-4 text-muted-foreground hover:text-cream" />
+                          </Button>
+                          {/* DELETE button */}
+                          <Button size="sm" variant="ghost" onClick={() => handleDeletePartner(p._id)}>
+                            <Trash className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* ── ASSIGN: Active Orders ── */}
+            <Card className="border-border">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-primary" />
+                  <CardTitle>Assign Partners to Active Orders</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {orders.filter(o => ['queued','preparing','ready','out_for_delivery'].includes(o.status)).length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-6">No active orders to assign.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {orders
+                      .filter(o => ['queued','preparing','ready','out_for_delivery'].includes(o.status))
+                      .map(order => {
+                        const orderId = order._id || order.id;
+                        return (
+                          <div key={orderId} className="p-4 rounded-xl border border-border bg-muted/30 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                            <div>
+                              <p className="font-semibold text-sm">#{order.id}</p>
+                              <p className="text-xs text-muted-foreground">{order.customerName} · {order.customerPhone}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {order.items.map(i => `${i.menuItem.name} ×${i.quantity}`).join(', ')}
+                              </p>
+                              {order.assignedPartner && (
+                                <p className="text-xs text-success mt-1 flex items-center gap-1">
+                                  <Check className="w-3 h-3" /> Assigned to {order.assignedPartner.name}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {order.status !== 'out_for_delivery' ? (
+                                <>
+                                  <select
+                                    className="text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground"
+                                    value={selectedPartnerId[orderId] || ''}
+                                    onChange={e => setSelectedPartnerId(prev => ({
+                                      ...prev,
+                                      [orderId]: e.target.value,
+                                    }))}
+                                  >
+                                    <option value="" disabled>Select partner</option>
+                                    {partners.filter(p => p.status === 'available').map(p => (
+                                      <option key={p._id} value={p._id}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                  <Button
+                                    size="sm"
+                                    className="bg-sienna hover:bg-sienna-light text-cream rounded-full"
+                                    disabled={!selectedPartnerId[orderId]}
+                                    onClick={() => handleAssignPartner(orderId)}
+                                  >
+                                    Assign
+                                  </Button>
+                                </>
+                              ) : (
+                                <Badge className="bg-sienna/20 text-sienna border-sienna/30">
+                                  Out for Delivery
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
           </TabsContent>
         </Tabs>
       </main>

@@ -16,7 +16,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['queued', 'preparing', 'ready', 'picked'], // allowed statuses
+    enum: ['queued', 'preparing', 'ready', 'picked', 'out_for_delivery'],
     default: 'queued',
   },
   displayOrderId: {
@@ -54,6 +54,12 @@ const orderSchema = new mongoose.Schema({
     enum: ['website', 'whatsapp'],
     default: 'website'
   },
+  // Delivery partner assigned to this order
+  assignedPartner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DeliveryPartner',
+    default: null,
+  },
   // Additional metadata
   metadata: {
     userAgent: String,
@@ -63,7 +69,8 @@ const orderSchema = new mongoose.Schema({
 }, { timestamps: true }); // adds createdAt and updatedAt
 
 // Index for efficient queries
-orderSchema.index({ displayOrderId: 1 });
+// Note: displayOrderId already has a unique index from `unique: true` in the field definition above.
+// Declaring it again here would create a duplicate — so it's intentionally omitted.
 orderSchema.index({ 'customer.phone': 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });

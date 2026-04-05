@@ -118,16 +118,13 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartItemsCount={cartItems.length} />
-      <main className="container py-8 animate-fade-up pt-24">
+      <main className="container py-8 page-fade-up pt-24">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Checkout</h1>
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Order Review */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Order Review</CardTitle>
-                </CardHeader>
+            <div className="space-y-6 page-slide-left stagger-1">
+              <Card className="transition-all duration-300 hover:border-sienna/20 hover:shadow-lg">
+                <CardHeader><CardTitle>Order Review</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {cartItems.map((item: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 border-b border-border last:border-0">
@@ -148,10 +145,8 @@ export default function Checkout() {
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Customer Details</CardTitle>
-                </CardHeader>
+              <Card className="transition-all duration-300 hover:border-sienna/20 hover:shadow-lg">
+                <CardHeader><CardTitle>Customer Details</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <p><span className="font-medium">Name:</span> {customerInfo.name}</p>
@@ -160,9 +155,8 @@ export default function Checkout() {
                 </CardContent>
               </Card>
             </div>
-            {/* Payment */}
-            <div>
-              <Card>
+            <div className="page-slide-right stagger-2">
+              <Card className="transition-all duration-300 hover:border-sienna/20 hover:shadow-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <CreditCard className="w-5 h-5" />
